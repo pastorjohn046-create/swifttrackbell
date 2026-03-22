@@ -108,6 +108,24 @@ export default function AdminLogin() {
             {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <ArrowRight className="w-6 h-6" />}
             Authenticate Access
           </button>
+
+          <div className="relative flex items-center gap-4 my-2">
+            <div className="h-px bg-border flex-1"></div>
+            <span className="text-[10px] font-bold text-muted uppercase tracking-widest">OR</span>
+            <div className="h-px bg-border flex-1"></div>
+          </div>
+
+          <button 
+            type="button"
+            onClick={() => {
+              localStorage.setItem('admin_session', 'true');
+              navigate('/admin');
+            }}
+            className="btn-secondary w-full py-4 text-lg border-2 border-primary/20 hover:border-primary/50"
+          >
+            <Shield className="w-6 h-6 text-primary" />
+            Demo Admin Login
+          </button>
         </form>
 
         <div className="text-center">

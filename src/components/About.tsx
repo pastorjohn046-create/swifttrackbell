@@ -1,67 +1,118 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Globe, Shield, Zap, Heart } from 'lucide-react';
+import { Globe, ShieldCheck, Clock, Package, CheckCircle2, Plane, Truck, Bus } from 'lucide-react';
 
 export default function About() {
   return (
-    <div className="max-w-6xl mx-auto py-20 px-6">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-20"
-      >
-        <h1 className="text-8xl font-black tracking-tighter uppercase mb-6 leading-none">
-          Swift<span className="text-accent">Track</span>
-        </h1>
-        <p className="text-xl font-bold uppercase tracking-widest opacity-60">
-          The Future of Global Logistics, Simplified.
-        </p>
-      </motion.div>
+    <div className="flex flex-col gap-16 sm:gap-24 animate-fade-in py-8">
+      {/* Hero Section */}
+      <section className="text-center flex flex-col gap-6 max-w-4xl mx-auto">
+        <motion.h1 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-4xl sm:text-7xl font-black tracking-tight text-text"
+        >
+          Our Story. Our <span className="text-primary">Mission</span>.
+        </motion.h1>
+        <motion.p 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="text-lg sm:text-xl text-muted leading-relaxed"
+        >
+          SwiftTrack was founded with a single goal: to bring transparency and security to the global logistics industry. Today, we handle thousands of high-value consignments daily across 150+ countries.
+        </motion.p>
+      </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-20">
-        <div className="card-brutal p-10 bg-secondary/10">
-          <h2 className="text-4xl font-black uppercase mb-6 tracking-tight">Our Mission</h2>
-          <p className="text-lg font-medium leading-relaxed">
-            We believe that shipping shouldn't be a headache. SwiftTrack was born from a desire to bring transparency, speed, and a touch of personality to the logistics world. We're not just moving boxes; we're moving dreams, businesses, and connections.
-          </p>
-        </div>
-        <div className="card-brutal p-10 bg-tertiary/10">
-          <h2 className="text-4xl font-black uppercase mb-6 tracking-tight">Why Us?</h2>
-          <p className="text-lg font-medium leading-relaxed">
-            In a world of boring tracking pages and faceless corporations, we stand out. Our platform is built on cutting-edge tech, but our heart is human. We're playful, professional, and obsessed with your satisfaction.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
+      {/* Stats Section */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-8">
         {[
-          { icon: Globe, title: 'Global Reach', color: 'bg-accent' },
-          { icon: Shield, title: 'Secure Handling', color: 'bg-secondary' },
-          { icon: Zap, title: 'Lightning Fast', color: 'bg-tertiary' },
-          { icon: Heart, title: 'Customer First', color: 'bg-quaternary' },
-        ].map((item, i) => (
+          { label: "Founded", value: "2010" },
+          { label: "Global Hubs", value: "24" },
+          { label: "Countries", value: "150+" },
+          { label: "Packages", value: "1M+" }
+        ].map((stat, i) => (
           <motion.div 
             key={i}
-            whileHover={{ scale: 1.05, rotate: i % 2 === 0 ? 2 : -2 }}
-            className="card-brutal p-8 text-center flex flex-col items-center gap-4"
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ delay: i * 0.1 }}
+            viewport={{ once: true }}
+            className="card-modern p-6 text-center flex flex-col gap-1"
           >
-            <div className={`p-4 rounded-full ${item.color} border-2 border-ink`}>
-              <item.icon className="w-8 h-8" />
-            </div>
-            <h3 className="text-xl font-black uppercase tracking-tight">{item.title}</h3>
+            <span className="text-3xl font-black text-primary">{stat.value}</span>
+            <span className="text-[10px] font-bold text-muted uppercase tracking-widest">{stat.label}</span>
           </motion.div>
         ))}
-      </div>
+      </section>
 
-      <div className="card-brutal p-12 bg-ink text-bg text-center">
-        <h2 className="text-5xl font-black uppercase mb-8 tracking-tighter">Ready to ship?</h2>
-        <p className="text-xl mb-10 opacity-80 max-w-2xl mx-auto">
-          Join thousands of happy customers who trust SwiftTrack with their most important consignments.
-        </p>
-        <button className="btn-primary bg-accent text-ink border-accent shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)]">
-          Get Started Now
-        </button>
-      </div>
+      {/* Detailed Content */}
+      <section className="flex flex-col lg:flex-row items-center gap-16">
+        <div className="flex-1 flex flex-col gap-8">
+          <div className="flex flex-col gap-4">
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-text">Why <span className="text-secondary">SwiftTrack</span>?</h2>
+            <p className="text-lg text-muted leading-relaxed">
+              In an era of global uncertainty, the security of your high-value items is paramount. We don't just move boxes; we manage assets. Our infrastructure is built on 256-bit encryption, 24/7 physical monitoring, and a network of certified global partners.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="flex items-start gap-4 p-4 bg-white rounded-2xl border border-border shadow-sm">
+              <ShieldCheck className="w-6 h-6 text-primary shrink-0" />
+              <div>
+                <h4 className="font-bold">TAPA Certified</h4>
+                <p className="text-xs text-muted">Highest security standards in the industry.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4 p-4 bg-white rounded-2xl border border-border shadow-sm">
+              <Globe className="w-6 h-6 text-secondary shrink-0" />
+              <div>
+                <h4 className="font-bold">Global Reach</h4>
+                <p className="text-xs text-muted">Seamless delivery to even the most remote locations.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 relative">
+          <div className="aspect-video bg-bg rounded-[2rem] border border-border relative overflow-hidden flex items-center justify-center">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="text-primary/10"
+            >
+              <Globe className="w-48 h-48" />
+            </motion.div>
+            {/* Moving Elements */}
+            <motion.div
+              initial={{ x: -100, y: -50 }}
+              animate={{ x: 100, y: 50 }}
+              transition={{ duration: 5, repeat: Infinity, repeatType: 'reverse' }}
+              className="absolute text-primary"
+            >
+              <Plane className="w-12 h-12" />
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Values Section */}
+      <section className="flex flex-col gap-12">
+        <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-center">Our Core <span className="text-accent">Values</span></h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            { icon: <ShieldCheck />, title: "Integrity", desc: "We operate with absolute transparency in every transaction." },
+            { icon: <Clock />, title: "Precision", desc: "Every second counts. We optimize for speed without compromising safety." },
+            { icon: <Package />, title: "Care", desc: "We treat every consignment as if it were our own." }
+          ].map((value, i) => (
+            <div key={i} className="card-modern p-8 flex flex-col gap-4 text-center items-center">
+              <div className="w-16 h-16 rounded-2xl bg-bg flex items-center justify-center text-primary">
+                {React.cloneElement(value.icon as React.ReactElement, { className: "w-8 h-8" })}
+              </div>
+              <h4 className="text-xl font-bold">{value.title}</h4>
+              <p className="text-sm text-muted leading-relaxed">{value.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

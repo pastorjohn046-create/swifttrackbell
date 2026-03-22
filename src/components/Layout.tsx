@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
 import { UserProfile } from '../types';
-import { Globe, LogOut, User as UserIcon, Shield, Search, Info, Package, Plane, Truck, Bus } from 'lucide-react';
+import { Globe, LogOut, User as UserIcon, Shield, Search, Info, Package, Plane, Truck, Bus, Star } from 'lucide-react';
 import { motion } from 'motion/react';
 import Logo from './Logo';
 
@@ -64,6 +64,14 @@ export default function Layout({ children, user, profile }: LayoutProps) {
           </Link>
 
           <nav className="flex items-center gap-1.5 sm:gap-6">
+            <Link to="/about" className="text-[10px] sm:text-sm font-semibold text-muted hover:text-primary transition-colors flex items-center gap-1 sm:gap-1.5">
+              <Info className="w-3.5 h-3.5 sm:w-4 h-4" />
+              <span className="hidden xs:inline">About</span>
+            </Link>
+            <Link to="/reviews" className="text-[10px] sm:text-sm font-semibold text-muted hover:text-primary transition-colors flex items-center gap-1 sm:gap-1.5">
+              <Star className="w-3.5 h-3.5 sm:w-4 h-4" />
+              <span className="hidden xs:inline">Reviews</span>
+            </Link>
             <Link to="/track" className="text-[10px] sm:text-sm font-semibold text-muted hover:text-primary transition-colors flex items-center gap-1 sm:gap-1.5">
               <Search className="w-3.5 h-3.5 sm:w-4 h-4" />
               <span className="hidden xs:inline">Track</span>

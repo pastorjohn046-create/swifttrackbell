@@ -7,6 +7,7 @@ import Home from './components/Home';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import About from './components/About';
+import ReviewsPage from './components/ReviewsPage';
 import AdminPanel from './components/AdminPanel';
 import AdminLogin from './components/AdminLogin';
 import Tracking from './components/Tracking';
@@ -70,6 +71,7 @@ export default function App() {
           <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
           <Route path="/track" element={<Tracking profile={profile} />} />
           <Route path="/about" element={<About />} />
+          <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="/dashboard" element={user ? <Dashboard profile={profile} /> : <Navigate to="/login" />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route 

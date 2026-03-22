@@ -79,6 +79,21 @@ export default function Dashboard({ profile }: DashboardProps) {
     }
   };
 
+  const getStatusProgress = (status: string) => {
+    switch (status) {
+      case 'pending': return 10;
+      case 'warehouse': return 25;
+      case 'carrier-1': return 40;
+      case 'carrier-2': return 55;
+      case 'carrier-3': return 70;
+      case 'customs': return 85;
+      case 'shipped': return 95;
+      case 'delivered': return 100;
+      case 'cancelled': return 0;
+      default: return 0;
+    }
+  };
+
   const filteredShipments = shipments.filter(s => 
     s.trackingNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (s.receiverName && s.receiverName.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -218,6 +233,23 @@ export default function Dashboard({ profile }: DashboardProps) {
                         </span>
                       </div>
                     </div>
+
+                    <div className="mt-4 flex flex-col gap-2">
+                      <div className="flex justify-between items-center text-[10px] font-bold text-muted uppercase tracking-widest">
+                        <span>Progress</span>
+                        <span>{getStatusProgress(shipment.status)}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-border rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-1000 ease-out ${
+                            shipment.status === 'delivered' ? 'bg-emerald-500' : 
+                            shipment.status === 'cancelled' ? 'bg-rose-500' : 'bg-primary'
+                          }`}
+                          style={{ width: `${getStatusProgress(shipment.status)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-border/50">
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Receiver</span>
