@@ -109,18 +109,14 @@ export default function Tracking({ profile }: TrackingProps) {
     setClaimStatus(null);
     
     try {
-      if (shipment.receiverEmail === profile.email || !shipment.senderId || shipment.senderId === 'admin') {
-        await api.shipments.update(shipment.id, {
-          senderId: profile.uid
-        });
-        setClaimStatus({ type: 'success', message: 'Shipment successfully claimed!' });
-        const updated = await api.shipments.get(shipment.id);
-        setShipment(updated);
-      } else {
-        setClaimStatus({ type: 'error', message: 'You are not authorized to claim this shipment.' });
-      }
-    } catch (error) {
-      setClaimStatus({ type: 'error', message: 'An error occurred while claiming the shipment.' });
+      // Use the new claim endpoint
+      await api.shipments.claim(shipment.id);
+      
+      setClaimStatus({ type: 'success', message: 'Shipment successfully claimed!' });
+      const updated = await api.shipments.get(shipment.id);
+      setShipment(updated);
+    } catch (error: any) {
+      setClaimStatus({ type: 'error', message: error.message || 'An error occurred while claiming the shipment.' });
     } finally {
       setClaiming(false);
     }

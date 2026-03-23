@@ -34,8 +34,24 @@ function saveDb(db: any) {
 
 async function startServer() {
   const app = express();
-  app.use(express.json());
+  
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
   app.use(cookieParser());
+
+  // Request Logger
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    if (req.method === 'POST' || req.method === 'PUT') {
+      console.log('Body keys:', Object.keys(req.body || {}));
+    }
+    next();
+  });
+
+  // Test Route
+  app.get('/api/ping', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
 
   // Auth Middleware
   const authenticate = (req: any, res: any, next: any) => {
@@ -68,54 +84,88 @@ async function startServer() {
 
   // API Routes
   app.post('/api/auth/signup', async (req, res) => {
-    console.log('Signup request received:', { email: req.body?.email, name: req.body?.name });
-    const { email, password, name, role } = req.body;
-    const db = getDb();
-    
-    if (db.users.find((u: any) => u.email === email)) {
-      console.log('Signup failed: User already exists', email);
-      return res.status(400).json({ error: 'User already exists' });
+    try {
+      console.log('Signup request received:', { email: req.body?.email, name: req.body?.name });
+      const { email, password, name } = req.body;
+      
+      if (!email || !password || !name) {
+        console.log('Signup failed: Missing fields');
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const db = getDb();
+      
+      if (db.users.find((u: any) => u.email === email)) {
+        console.log('Signup failed: User already exists', email);
+        return res.status(400).json({ error: 'User already exists' });
+      }
+
+      console.log('Hashing password for:', email);
+      const hashedPassword = await bcrypt.hash(password, 10);
+      console.log('Password hashed successfully');
+
+      const newUser = {
+        uid: Math.random().toString(36).substring(2, 15),
+        email,
+        password: hashedPassword,
+        name,
+        role: (email === 'pastorjohn046@gmail.com' || email === 'admin@example.com') ? 'admin' : 'user',
+        customerID: generateCustomerID(),
+        createdAt: new Date().toISOString()
+      };
+
+      db.users.push(newUser);
+      saveDb(db);
+
+      const token = jwt.sign({ uid: newUser.uid }, JWT_SECRET, { expiresIn: '7d' });
+      res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'none' });
+      
+      const { password: _, ...userWithoutPassword } = newUser;
+      console.log('Signup successful:', email);
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      res.status(500).json({ error: 'Signup failed', message: error.message });
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = {
-      uid: Math.random().toString(36).substring(2, 15),
-      email,
-      password: hashedPassword,
-      name,
-      role: (email === 'pastorjohn046@gmail.com' || email === 'admin@example.com') ? 'admin' : 'user',
-      customerID: generateCustomerID(),
-      createdAt: new Date().toISOString()
-    };
-
-    db.users.push(newUser);
-    saveDb(db);
-
-    const token = jwt.sign({ uid: newUser.uid }, JWT_SECRET, { expiresIn: '7d' });
-    res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'none' });
-    
-    const { password: _, ...userWithoutPassword } = newUser;
-    console.log('Signup successful:', email);
-    res.json(userWithoutPassword);
   });
 
   app.post('/api/auth/login', async (req, res) => {
-    console.log('Login request received:', { email: req.body?.email });
-    const { email, password } = req.body;
-    const db = getDb();
-    const user = db.users.find((u: any) => u.email === email);
+    try {
+      console.log('Login request received:', { email: req.body?.email });
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        console.log('Login failed: Missing fields');
+        return res.status(400).json({ error: 'Missing email or password' });
+      }
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      console.log('Login failed: Invalid credentials', email);
-      return res.status(401).json({ error: 'Invalid credentials' });
+      const db = getDb();
+      const user = db.users.find((u: any) => u.email === email);
+
+      if (!user) {
+        console.log('Login failed: User not found', email);
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+
+      console.log('Comparing passwords for:', email);
+      const isMatch = await bcrypt.compare(password, user.password);
+      console.log('Password match result:', isMatch);
+
+      if (!isMatch) {
+        console.log('Login failed: Password mismatch', email);
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+
+      const token = jwt.sign({ uid: user.uid }, JWT_SECRET, { expiresIn: '7d' });
+      res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'none' });
+      
+      const { password: _, ...userWithoutPassword } = user;
+      console.log('Login successful:', email);
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      console.error('Login error:', error);
+      res.status(500).json({ error: 'Login failed', message: error.message });
     }
-
-    const token = jwt.sign({ uid: user.uid }, JWT_SECRET, { expiresIn: '7d' });
-    res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'none' });
-    
-    const { password: _, ...userWithoutPassword } = user;
-    console.log('Login successful:', email);
-    res.json(userWithoutPassword);
   });
 
   app.get('/api/auth/me', (req, res) => {
@@ -290,6 +340,26 @@ async function startServer() {
     }
     saveDb(db);
     res.json(db.shipments[index === -1 ? db.shipments.length - 1 : index]);
+  });
+
+  app.post('/api/shipments/:id/claim', authenticate, (req, res) => {
+    const db = getDb();
+    const index = db.shipments.findIndex((s: any) => s.id === req.params.id);
+    if (index === -1) return res.status(404).json({ error: 'Shipment not found' });
+    
+    const user = db.users.find((u: any) => u.uid === (req as any).user.uid);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const shipment = db.shipments[index];
+    
+    // Allow claiming if receiverEmail matches or if it's unassigned/admin-owned
+    if (shipment.receiverEmail === user.email || !shipment.senderId || shipment.senderId === 'admin') {
+      db.shipments[index].senderId = user.uid;
+      saveDb(db);
+      res.json(db.shipments[index]);
+    } else {
+      res.status(403).json({ error: 'You are not authorized to claim this shipment.' });
+    }
   });
 
   app.delete('/api/shipments/:id', isAdmin, (req, res) => {

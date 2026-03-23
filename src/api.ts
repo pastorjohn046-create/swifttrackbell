@@ -3,7 +3,7 @@ import { UserProfile } from './types';
 export const api = {
   auth: {
     async me() {
-      const res = await fetch('/api/auth/me');
+      const res = await fetch('/api/auth/me', { credentials: 'include' });
       if (!res.ok) return null;
       return res.json();
     },
@@ -11,7 +11,8 @@ export const api = {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        credentials: 'include'
       });
       
       const contentType = res.headers.get('content-type');
@@ -31,7 +32,8 @@ export const api = {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        credentials: 'include'
       });
       
       const contentType = res.headers.get('content-type');
@@ -48,22 +50,25 @@ export const api = {
       return res.json();
     },
     async logout() {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch('/api/auth/logout', { 
+        method: 'POST',
+        credentials: 'include'
+      });
     },
     async getGoogleAuthUrl() {
-      const res = await fetch('/api/auth/google/url');
+      const res = await fetch('/api/auth/google/url', { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to get Google Auth URL');
       return res.json();
     }
   },
   users: {
     async list() {
-      const res = await fetch('/api/users');
+      const res = await fetch('/api/users', { credentials: 'include' });
       if (!res.ok) return [];
       return res.json();
     },
     async get(id: string) {
-      const res = await fetch(`/api/users/${id}`);
+      const res = await fetch(`/api/users/${id}`, { credentials: 'include' });
       if (!res.ok) return null;
       return res.json();
     },
@@ -71,14 +76,15 @@ export const api = {
       const res = await fetch(`/api/users/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to update user');
     }
   },
   shipments: {
     async list() {
-      const res = await fetch('/api/shipments');
+      const res = await fetch('/api/shipments', { credentials: 'include' });
       if (!res.ok) return [];
       return res.json();
     },
@@ -86,7 +92,8 @@ export const api = {
       const res = await fetch('/api/shipments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to create shipment');
       return res.json();
@@ -95,24 +102,37 @@ export const api = {
       const res = await fetch(`/api/shipments/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to update shipment');
       return res.json();
     },
     async get(id: string) {
-      const res = await fetch(`/api/shipments/${id}`);
+      const res = await fetch(`/api/shipments/${id}`, { credentials: 'include' });
       if (!res.ok) return null;
       return res.json();
     },
     async delete(id: string) {
       const res = await fetch(`/api/shipments/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to delete shipment');
     },
+    async claim(id: string) {
+      const res = await fetch(`/api/shipments/${id}/claim`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to claim shipment');
+      }
+      return res.json();
+    },
     async getUpdates(id: string) {
-      const res = await fetch(`/api/shipments/${id}/updates`);
+      const res = await fetch(`/api/shipments/${id}/updates`, { credentials: 'include' });
       if (!res.ok) return [];
       return res.json();
     },
@@ -120,7 +140,8 @@ export const api = {
       const res = await fetch(`/api/shipments/${id}/updates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to add update');
       return res.json();
@@ -128,7 +149,7 @@ export const api = {
   },
   flights: {
     async list() {
-      const res = await fetch('/api/flights');
+      const res = await fetch('/api/flights', { credentials: 'include' });
       if (!res.ok) return [];
       return res.json();
     },
@@ -136,7 +157,8 @@ export const api = {
       const res = await fetch('/api/flights', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to create flight');
       return res.json();
@@ -145,24 +167,26 @@ export const api = {
       const res = await fetch(`/api/flights/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to update flight');
       return res.json();
     },
     async get(id: string) {
-      const res = await fetch(`/api/flights/${id}`);
+      const res = await fetch(`/api/flights/${id}`, { credentials: 'include' });
       if (!res.ok) return null;
       return res.json();
     },
     async delete(id: string) {
       const res = await fetch(`/api/flights/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to delete flight');
     },
     async getUpdates(id: string) {
-      const res = await fetch(`/api/flights/${id}/updates`);
+      const res = await fetch(`/api/flights/${id}/updates`, { credentials: 'include' });
       if (!res.ok) return [];
       return res.json();
     },
@@ -170,7 +194,8 @@ export const api = {
       const res = await fetch(`/api/flights/${id}/updates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to add update');
       return res.json();
@@ -178,7 +203,7 @@ export const api = {
   },
   supportTickets: {
     async list() {
-      const res = await fetch('/api/supportTickets');
+      const res = await fetch('/api/supportTickets', { credentials: 'include' });
       if (!res.ok) return [];
       return res.json();
     },
@@ -186,7 +211,8 @@ export const api = {
       const res = await fetch('/api/supportTickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to create support ticket');
       return res.json();
@@ -195,21 +221,23 @@ export const api = {
       const res = await fetch(`/api/supportTickets/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to update support ticket');
       return res.json();
     },
     async delete(id: string) {
       const res = await fetch(`/api/supportTickets/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to delete support ticket');
     }
   },
   reviews: {
     async list() {
-      const res = await fetch('/api/reviews');
+      const res = await fetch('/api/reviews', { credentials: 'include' });
       if (!res.ok) return [];
       return res.json();
     },
@@ -217,7 +245,8 @@ export const api = {
       const res = await fetch('/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to create review');
       return res.json();

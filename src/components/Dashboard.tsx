@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 import { Shipment, UserProfile } from '../types';
-import { Package, Search, User, Mail, Calendar, Shield, Hash, Plus, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Package, Search, User, Mail, Calendar, Shield, Hash, Plus, CheckCircle2, AlertCircle, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface DashboardProps {
@@ -60,23 +60,18 @@ export default function Dashboard({ profile }: DashboardProps) {
         return;
       }
 
-      // Allow claiming if receiverEmail matches or if it's unassigned
-      if (shipment.receiverEmail === profile.email || !shipment.senderId || shipment.senderId === 'admin') {
-        await api.shipments.update(shipment.id, {
-          senderId: profile.uid
-        });
-        setClaimStatus({ type: 'success', message: 'Shipment successfully claimed and added to your dashboard!' });
-        setClaimTracking('');
-        
-        // Refresh list
-        const updatedData = await api.shipments.list();
-        const filtered = updatedData.filter(s => s.senderId === profile.uid || s.receiverEmail === profile.email);
-        setShipments(filtered);
-      } else {
-        setClaimStatus({ type: 'error', message: 'You are not authorized to claim this shipment.' });
-      }
-    } catch (error) {
-      setClaimStatus({ type: 'error', message: 'An error occurred while claiming the shipment.' });
+      // Use the new claim endpoint
+      await api.shipments.claim(shipment.id);
+      
+      setClaimStatus({ type: 'success', message: 'Shipment successfully claimed and added to your dashboard!' });
+      setClaimTracking('');
+      
+      // Refresh list
+      const updatedData = await api.shipments.list();
+      const filtered = updatedData.filter(s => s.senderId === profile.uid || s.receiverEmail === profile.email);
+      setShipments(filtered);
+    } catch (error: any) {
+      setClaimStatus({ type: 'error', message: error.message || 'An error occurred while claiming the shipment.' });
     } finally {
       setClaiming(false);
     }
@@ -260,9 +255,45 @@ export default function Dashboard({ profile }: DashboardProps) {
                       </div>
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Destination</span>
-                        <span className="text-sm font-bold">{shipment.destination}</span>
+                        <span className="text-sm font-bold">{shipment.destination || shipment.receiverAddress}</span>
                       </div>
                     </div>
+
+                    {/* Tracking Updates Timeline */}
+                    {((shipment as any).updates && (shipment as any).updates.length > 0) && (
+                      <div className="mt-6 pt-6 border-t border-border/50">
+                        <h4 className="text-[10px] font-bold text-muted uppercase tracking-widest mb-4">Tracking History</h4>
+                        <div className="flex flex-col gap-4">
+                          {(shipment as any).updates.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((update: any) => (
+                            <div key={update.id} className="flex gap-4">
+                              <div className="flex flex-col items-center">
+                                <div className="w-2 h-2 rounded-full bg-primary mt-1.5" />
+                                <div className="w-px h-full bg-border mt-1" />
+                              </div>
+                              <div className="flex flex-col gap-1 pb-4">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-bold text-text">{update.status}</span>
+                                  <span className="text-[10px] font-medium text-muted">{format(new Date(update.timestamp), 'MMM dd, HH:mm')}</span>
+                                </div>
+                                <span className="text-[10px] font-bold text-primary uppercase tracking-tight flex items-center gap-1">
+                                  <MapPin className="w-3 h-3" /> {update.location}
+                                </span>
+                                <p className="text-xs text-muted leading-relaxed">{update.description}</p>
+                                {update.packageImage && (
+                                  <img 
+                                    src={update.packageImage} 
+                                    alt="Update" 
+                                    referrerPolicy="no-referrer"
+                                    className="mt-2 w-full h-24 object-cover rounded-lg border border-border" 
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {shipment.packageImage && (
                       <div className="mt-4 pt-4 border-t border-border/50">
                         <img 

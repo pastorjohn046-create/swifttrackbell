@@ -23,6 +23,8 @@ export interface Shipment {
   receiverEmail?: string;
   receiverPhone?: string;
   receiverAddress: string;
+  origin?: string;
+  destination?: string;
   status: ShipmentStatus;
   description: string;
   weight: number;
