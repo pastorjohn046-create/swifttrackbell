@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { db, handleFirestoreError, OperationType, collection, query, onSnapshot, orderBy, doc, updateDoc, addDoc, setDoc, deleteDoc } from '../firebase';
+import { api } from '../api';
 import { Shipment, ShipmentStatus, TrackingUpdate, Flight, FlightStatus, SupportTicket, Review } from '../types';
 import { Search, Edit2, Plus, ArrowRight, Loader2, MapPin, Info, Plane, MessageSquare, Package, CheckCircle, XCircle, Star, FileText, Printer, X, Clock, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import Logo from './Logo';
 
-type AdminTab = 'shipments' | 'flights' | 'cs' | 'reviews' | 'receipts';
+type AdminTab = 'shipments' | 'flights' | 'cs' | 'reviews' | 'receipts' | 'users';
 
 export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState<AdminTab>('shipments');
@@ -13,6 +13,7 @@ export default function AdminPanel() {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
@@ -100,12 +101,13 @@ export default function AdminPanel() {
 
   const handleDeleteShipment = async (id: string) => {
     try {
-      await deleteDoc(doc(db, 'shipments', id));
+      await api.shipments.delete(id);
       setConfirmDeleteId(null);
       setConfirmDeleteType(null);
       if (selectedShipment?.id === id) setSelectedShipment(null);
+      refreshData();
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `shipments/${id}`);
+      console.error(error);
     }
   };
 
@@ -139,35 +141,30 @@ export default function AdminPanel() {
     setShowShipmentForm(true);
   };
 
-  useEffect(() => {
-    const qShipments = query(collection(db, 'shipments'), orderBy('createdAt', 'desc'));
-    const qFlights = query(collection(db, 'flights'), orderBy('departureTime', 'desc'));
-    const qTickets = query(collection(db, 'supportTickets'), orderBy('createdAt', 'desc'));
-
-    const unsubShipments = onSnapshot(qShipments, (snapshot) => {
-      setShipments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Shipment)));
+  const refreshData = async () => {
+    try {
+      const [s, f, t, r, u] = await Promise.all([
+        api.shipments.list(),
+        api.flights.list(),
+        api.supportTickets.list(),
+        api.reviews.list(),
+        api.users.list()
+      ]);
+      setShipments(s);
+      setFlights(f);
+      setTickets(t);
+      setReviews(r);
+      setUsers(u);
       setLoading(false);
-    });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-    const unsubFlights = onSnapshot(qFlights, (snapshot) => {
-      setFlights(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Flight)));
-    });
-
-    const unsubTickets = onSnapshot(qTickets, (snapshot) => {
-      setTickets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SupportTicket)));
-    });
-
-    const qReviews = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'));
-    const unsubReviews = onSnapshot(qReviews, (snapshot) => {
-      setReviews(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review)));
-    });
-
-    return () => {
-      unsubShipments();
-      unsubFlights();
-      unsubTickets();
-      unsubReviews();
-    };
+  useEffect(() => {
+    refreshData();
+    const interval = setInterval(refreshData, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleSaveShipment = async (e: React.FormEvent) => {
@@ -179,36 +176,15 @@ export default function AdminPanel() {
     };
     try {
       if (editingShipment) {
-        await updateDoc(doc(db, 'shipments', editingShipment.id), dataToSave);
+        await api.shipments.update(editingShipment.id, dataToSave);
       } else {
-        await addDoc(collection(db, 'shipments'), {
-          ...dataToSave,
-          createdAt: new Date().toISOString()
-        });
+        await api.shipments.create(dataToSave);
       }
       setShowShipmentForm(false);
       setEditingShipment(null);
-      setShipmentData({
-        trackingNumber: '',
-        senderName: '',
-        senderEmail: '',
-        senderPhone: '',
-        senderAddress: '',
-        receiverName: '',
-        receiverEmail: '',
-        receiverPhone: '',
-        receiverAddress: '',
-        origin: '',
-        destination: '',
-        status: 'pending',
-        weight: '',
-        dimensions: '',
-        serviceType: 'Express',
-        estimatedDelivery: '',
-        packageImage: ''
-      });
+      refreshData();
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'shipments');
+      console.error(error);
     } finally {
       setUpdating(false);
     }
@@ -220,25 +196,20 @@ export default function AdminPanel() {
     setUpdating(true);
     try {
       const now = new Date().toISOString();
-      await addDoc(collection(db, 'shipments', selectedShipment.id, 'updates'), {
-        shipmentId: selectedShipment.id,
+      await api.shipments.addUpdate(selectedShipment.id, {
         location: updateLocation,
         status: newStatus,
         description: updateDesc,
         packageImage: updateImage,
         timestamp: now
       });
-      await updateDoc(doc(db, 'shipments', selectedShipment.id), {
-        status: newStatus,
-        packageImage: updateImage || selectedShipment.packageImage || '',
-        updatedAt: now
-      });
       setUpdateLocation('');
       setUpdateDesc('');
       setUpdateImage('');
       setSelectedShipment(null);
+      refreshData();
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'shipments');
+      console.error(error);
     } finally {
       setUpdating(false);
     }
@@ -249,18 +220,15 @@ export default function AdminPanel() {
     setUpdating(true);
     try {
       if (editingFlight) {
-        await updateDoc(doc(db, 'flights', editingFlight.id), flightData);
+        await api.flights.update(editingFlight.id, flightData);
       } else {
-        await addDoc(collection(db, 'flights'), {
-          ...flightData,
-          createdAt: new Date().toISOString()
-        });
+        await api.flights.create(flightData);
       }
       setShowFlightForm(false);
       setEditingFlight(null);
-      setFlightData({ flightNumber: '', origin: '', destination: '', departureTime: '', arrivalTime: '', status: 'scheduled' });
+      refreshData();
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'flights');
+      console.error(error);
     } finally {
       setUpdating(false);
     }
@@ -268,31 +236,34 @@ export default function AdminPanel() {
 
   const handleDeleteFlight = async (flightId: string) => {
     try {
-      await deleteDoc(doc(db, 'flights', flightId));
+      await api.flights.delete(flightId);
       setConfirmDeleteId(null);
       setConfirmDeleteType(null);
       if (selectedFlight?.id === flightId) setSelectedFlight(null);
+      refreshData();
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `flights/${flightId}`);
+      console.error(error);
     }
   };
 
   const handleDeleteTicket = async (ticketId: string) => {
     try {
-      await deleteDoc(doc(db, 'supportTickets', ticketId));
+      await api.supportTickets.delete(ticketId);
       setConfirmDeleteId(null);
       setConfirmDeleteType(null);
+      refreshData();
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `supportTickets/${ticketId}`);
+      console.error(error);
     }
   };
 
   const handleUpdateFlightStatus = async (flightId: string, status: FlightStatus) => {
     setUpdating(true);
     try {
-      await updateDoc(doc(db, 'flights', flightId), { status });
+      await api.flights.update(flightId, { status });
+      refreshData();
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'flights');
+      console.error(error);
     } finally {
       setUpdating(false);
     }
@@ -304,22 +275,18 @@ export default function AdminPanel() {
     setUpdating(true);
     try {
       const now = new Date().toISOString();
-      await addDoc(collection(db, 'flights', selectedFlight.id, 'updates'), {
-        flightId: selectedFlight.id,
+      await api.flights.addUpdate(selectedFlight.id, {
         location: updateLocation,
         status: flightData.status,
         description: updateDesc,
         timestamp: now
       });
-      await updateDoc(doc(db, 'flights', selectedFlight.id), {
-        status: flightData.status,
-        updatedAt: now
-      });
       setUpdateLocation('');
       setUpdateDesc('');
       setSelectedFlight(null);
+      refreshData();
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'flights');
+      console.error(error);
     } finally {
       setUpdating(false);
     }
@@ -327,14 +294,15 @@ export default function AdminPanel() {
 
   const handleResolveTicket = async (ticketId: string) => {
     try {
-      await updateDoc(doc(db, 'supportTickets', ticketId), { 
+      await api.supportTickets.update(ticketId, { 
         status: 'resolved',
         reply: replyText || 'Issue resolved by administrator.'
       });
       setReplyText('');
       setReplyingTo(null);
+      refreshData();
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'supportTickets');
+      console.error(error);
     }
   };
 
@@ -351,7 +319,7 @@ export default function AdminPanel() {
           <p className="text-sm font-medium text-muted">Manage shipments, flights, and customer support</p>
         </div>
         <div className="flex gap-1 p-1 bg-bg rounded-xl w-full sm:w-fit overflow-x-auto scrollbar-hide">
-          {(['shipments', 'flights', 'cs', 'reviews', 'receipts'] as AdminTab[]).map(tab => (
+          {(['shipments', 'flights', 'cs', 'reviews', 'receipts', 'users'] as AdminTab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -1026,6 +994,49 @@ export default function AdminPanel() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'users' && (
+        <div className="flex flex-col gap-8">
+          <div className="flex flex-col">
+            <h3 className="text-2xl font-bold tracking-tight text-text">Registered Users</h3>
+            <p className="text-sm text-muted font-medium">View and manage registered customers</p>
+          </div>
+          <div className="card-modern overflow-hidden bg-white">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-bg/50 border-b border-border">
+                    <th className="p-4 text-xs font-bold text-muted uppercase tracking-widest">Name</th>
+                    <th className="p-4 text-xs font-bold text-muted uppercase tracking-widest">Email</th>
+                    <th className="p-4 text-xs font-bold text-muted uppercase tracking-widest">Customer ID</th>
+                    <th className="p-4 text-xs font-bold text-muted uppercase tracking-widest">Role</th>
+                    <th className="p-4 text-xs font-bold text-muted uppercase tracking-widest">Joined</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {users.map((user) => (
+                    <tr key={user.uid} className="hover:bg-bg/30 transition-colors">
+                      <td className="p-4 font-bold text-text">{user.name}</td>
+                      <td className="p-4 text-sm text-muted">{user.email}</td>
+                      <td className="p-4 font-mono font-bold text-primary">{user.customerID}</td>
+                      <td className="p-4">
+                        <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${
+                          user.role === 'admin' ? 'bg-primary/10 text-primary' : 'bg-bg text-muted'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="p-4 text-sm text-muted font-medium">
+                        {user.createdAt ? format(new Date(user.createdAt), 'MMM dd, yyyy') : 'N/A'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

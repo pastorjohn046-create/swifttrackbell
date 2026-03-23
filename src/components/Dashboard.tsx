@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, handleFirestoreError, OperationType, collection, query, where, onSnapshot, orderBy, updateDoc, doc, getDocs } from '../firebase';
+import { api } from '../api';
 import { Shipment, UserProfile } from '../types';
 import { Package, Search, User, Mail, Calendar, Shield, Hash, Plus, CheckCircle2, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
@@ -19,23 +19,24 @@ export default function Dashboard({ profile }: DashboardProps) {
   useEffect(() => {
     if (!profile) return;
 
-    // Fetch shipments where user is sender OR receiver
-    const q = query(
-      collection(db, 'shipments'),
-      orderBy('createdAt', 'desc')
-    );
+    const fetchShipments = async () => {
+      try {
+        const data = await api.shipments.list();
+        // Filter shipments where user is sender OR receiver
+        const filtered = data.filter(s => s.senderId === profile.uid || s.receiverEmail === profile.email);
+        setShipments(filtered);
+      } catch (error) {
+        console.error('Error fetching shipments:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as Shipment))
-        .filter(s => s.senderId === profile.uid || s.receiverEmail === profile.email);
-      setShipments(docs);
-      setLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'shipments');
-    });
-
-    return () => unsubscribe();
+    fetchShipments();
+    
+    // Poll for updates every 30 seconds since we don't have real-time sockets yet
+    const interval = setInterval(fetchShipments, 30000);
+    return () => clearInterval(interval);
   }, [profile]);
 
   const handleClaimShipment = async (e: React.FormEvent) => {
@@ -46,29 +47,31 @@ export default function Dashboard({ profile }: DashboardProps) {
     setClaimStatus(null);
     
     try {
-      const q = query(collection(db, 'shipments'), where('trackingNumber', '==', claimTracking));
-      const snapshot = await getDocs(q);
+      const data = await api.shipments.list();
+      const shipment = data.find(s => s.trackingNumber === claimTracking);
       
-      if (snapshot.empty) {
+      if (!shipment) {
         setClaimStatus({ type: 'error', message: 'Tracking number not found.' });
         return;
       }
 
-      const shipmentDoc = snapshot.docs[0];
-      const shipmentData = shipmentDoc.data() as Shipment;
-
-      if (shipmentData.senderId === profile.uid) {
+      if (shipment.senderId === profile.uid) {
         setClaimStatus({ type: 'error', message: 'This shipment is already in your dashboard.' });
         return;
       }
 
-      // Allow claiming if receiverEmail matches or if it's unassigned (senderId is empty/placeholder)
-      if (shipmentData.receiverEmail === profile.email || !shipmentData.senderId || shipmentData.senderId === 'admin') {
-        await updateDoc(doc(db, 'shipments', shipmentDoc.id), {
-          senderId: profile.uid // Linking it to the user
+      // Allow claiming if receiverEmail matches or if it's unassigned
+      if (shipment.receiverEmail === profile.email || !shipment.senderId || shipment.senderId === 'admin') {
+        await api.shipments.update(shipment.id, {
+          senderId: profile.uid
         });
         setClaimStatus({ type: 'success', message: 'Shipment successfully claimed and added to your dashboard!' });
         setClaimTracking('');
+        
+        // Refresh list
+        const updatedData = await api.shipments.list();
+        const filtered = updatedData.filter(s => s.senderId === profile.uid || s.receiverEmail === profile.email);
+        setShipments(filtered);
       } else {
         setClaimStatus({ type: 'error', message: 'You are not authorized to claim this shipment.' });
       }

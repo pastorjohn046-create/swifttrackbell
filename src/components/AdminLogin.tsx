@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Lock, Mail, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
-import { auth, db, signInWithEmailAndPassword, doc, getDoc } from '../firebase';
-import { UserProfile } from '../types';
+import { api } from '../api';
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
@@ -18,28 +17,17 @@ export default function AdminLogin() {
     setError('');
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      const user = await api.auth.login({ email, password });
       
-      // Verify if this user has admin role in Firestore
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      const profile = userDoc.data() as UserProfile;
-
-      if (profile?.role === 'admin' || user.email === 'pastorjohn046@gmail.com') {
+      if (user?.role === 'admin' || user.email === 'pastorjohn046@gmail.com') {
         localStorage.setItem('admin_session', 'true');
-        navigate('/admin');
+        window.location.href = '/admin';
       } else {
-        await auth.signOut();
+        await api.auth.logout();
         setError('Access Denied: You do not have administrative privileges.');
       }
     } catch (err: any) {
-      if (err.code === 'auth/operation-not-allowed') {
-        setError('Email/Password login is disabled in Firebase Console. Please enable it to continue.');
-      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError('Invalid Admin Email or Password. Please try again.');
-      } else {
-        setError(err.message);
-      }
+      setError(err.message);
     } finally {
       setLoading(false);
     }

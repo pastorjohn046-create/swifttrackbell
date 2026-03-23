@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { auth } from '../firebase';
+import { api } from '../api';
 import { UserProfile } from '../types';
 import { Globe, LogOut, User as UserIcon, Shield, Search, Info, Package, Plane, Truck, Bus, Star } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -16,9 +16,9 @@ export default function Layout({ children, user, profile }: LayoutProps) {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await auth.signOut();
+    await api.auth.logout();
     localStorage.removeItem('admin_session');
-    navigate('/');
+    window.location.href = '/'; // Force reload to clear state
   };
 
   return (

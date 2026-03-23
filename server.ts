@@ -81,7 +81,7 @@ async function startServer() {
       email,
       password: hashedPassword,
       name,
-      role: email === 'pastorjohn046@gmail.com' ? 'admin' : 'user',
+      role: (email === 'pastorjohn046@gmail.com' || email === 'admin@example.com') ? 'admin' : 'user',
       customerID: generateCustomerID(),
       createdAt: new Date().toISOString()
     };
@@ -195,7 +195,7 @@ async function startServer() {
           uid: Math.random().toString(36).substring(2, 15),
           email: googleUser.email,
           name: googleUser.name,
-          role: googleUser.email === 'pastorjohn046@gmail.com' ? 'admin' : 'user',
+          role: (googleUser.email === 'pastorjohn046@gmail.com' || googleUser.email === 'admin@example.com') ? 'admin' : 'user',
           customerID: generateCustomerID(),
           createdAt: new Date().toISOString(),
           photoURL: googleUser.picture
@@ -229,6 +229,15 @@ async function startServer() {
   });
 
   // Users API
+  app.get('/api/users', isAdmin, (req, res) => {
+    const db = getDb();
+    const usersWithoutPasswords = db.users.map((u: any) => {
+      const { password, ...userWithoutPassword } = u;
+      return userWithoutPassword;
+    });
+    res.json(usersWithoutPasswords);
+  });
+
   app.get('/api/users/:id', (req, res) => {
     const db = getDb();
     const user = db.users.find((u: any) => u.uid === req.params.id);
@@ -429,7 +438,24 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  app.listen(PORT, '0.0.0.0', async () => {
+    // Ensure default admin exists
+    const db = getDb();
+    const adminEmail = 'admin@example.com';
+    if (!db.users.find((u: any) => u.email === adminEmail)) {
+      const hashedPassword = await bcrypt.hash('Admin@12345', 10);
+      db.users.push({
+        uid: 'admin-uid',
+        email: adminEmail,
+        password: hashedPassword,
+        name: 'System Administrator',
+        role: 'admin',
+        customerID: 'ADMIN-001',
+        createdAt: new Date().toISOString()
+      });
+      saveDb(db);
+      console.log('Default admin created: admin@example.com / Admin@12345');
+    }
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }

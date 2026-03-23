@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { auth, db, onAuthStateChanged, doc, getDoc, setDoc } from './firebase';
+import { api } from './api';
 import { UserProfile } from './types';
 import Layout from './components/Layout';
 import Home from './components/Home';
@@ -21,33 +21,20 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user: any) => {
-      setUser(user);
-      if (user) {
-        const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setProfile(docSnap.data() as UserProfile);
-        } else {
-          // Create profile if not exists (e.g. first login)
-          const newProfile: UserProfile = {
-            uid: user.uid,
-            email: user.email || '',
-            name: user.displayName || user.email?.split('@')[0] || 'User',
-            role: user.email === 'pastorjohn046@gmail.com' ? 'admin' : 'user',
-            customerID: 'CUST-' + Math.floor(100000 + Math.random() * 900000),
-            createdAt: new Date().toISOString(),
-          };
-          await setDoc(docRef, newProfile);
-          setProfile(newProfile);
-        }
-      } else {
+    const checkAuth = async () => {
+      try {
+        const currentUser = await api.auth.me();
+        setUser(currentUser);
+        setProfile(currentUser);
+      } catch (err) {
+        setUser(null);
         setProfile(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
+    checkAuth();
   }, []);
 
   if (loading) {
@@ -60,6 +47,13 @@ export default function App() {
 
   const isAdminAuthenticated = () => {
     return localStorage.getItem('admin_session') === 'true' || profile?.role === 'admin';
+  };
+
+  const handleLogout = async () => {
+    await api.auth.logout();
+    setUser(null);
+    setProfile(null);
+    localStorage.removeItem('admin_session');
   };
 
   return (

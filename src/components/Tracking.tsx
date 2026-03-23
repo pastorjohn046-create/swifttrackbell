@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, handleFirestoreError, OperationType, doc, getDoc, collection, query, orderBy, getDocs, where, onSnapshot, updateDoc } from '../firebase';
+import { api } from '../api';
 import { Shipment, TrackingUpdate, Review, Flight, UserProfile } from '../types';
 import { Search, Package, MapPin, Clock, AlertCircle, Loader2, Star, Plane, Globe, Info, Plus, CheckCircle2, Truck } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -24,43 +24,38 @@ export default function Tracking({ profile }: TrackingProps) {
   const [claimStatus, setClaimStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   useEffect(() => {
-    let unsubscribeShipment: (() => void) | undefined;
-    let unsubscribeFlight: (() => void) | undefined;
-    let unsubscribeUpdates: (() => void) | undefined;
+    let interval: any;
 
-    if (shipment) {
-      unsubscribeShipment = onSnapshot(doc(db, 'shipments', shipment.id), (doc) => {
-        if (doc.exists()) {
-          setShipment({ id: doc.id, ...doc.data() } as Shipment);
+    const refreshData = async () => {
+      if (shipment) {
+        try {
+          const s = await api.shipments.get(shipment.id);
+          setShipment(s);
+          const u = await api.shipments.getUpdates(shipment.id);
+          setUpdates(u);
+        } catch (err) {
+          console.error(err);
         }
-      }, (err) => handleFirestoreError(err, OperationType.GET, 'shipments'));
+      }
 
-      const updatesRef = collection(db, 'shipments', shipment.id, 'updates');
-      const q = query(updatesRef, orderBy('timestamp', 'desc'));
-      unsubscribeUpdates = onSnapshot(q, (snap) => {
-        setUpdates(snap.docs.map(d => ({ id: d.id, ...d.data() } as TrackingUpdate)));
-      }, (err) => handleFirestoreError(err, OperationType.GET, 'shipments/updates'));
-    }
-
-    if (flight) {
-      unsubscribeFlight = onSnapshot(doc(db, 'flights', flight.id), (doc) => {
-        if (doc.exists()) {
-          setFlight({ id: doc.id, ...doc.data() } as Flight);
+      if (flight) {
+        try {
+          const f = await api.flights.get(flight.id);
+          setFlight(f);
+          const u = await api.flights.getUpdates(flight.id);
+          setUpdates(u);
+        } catch (err) {
+          console.error(err);
         }
-      }, (err) => handleFirestoreError(err, OperationType.GET, 'flights'));
-
-      const updatesRef = collection(db, 'flights', flight.id, 'updates');
-      const q = query(updatesRef, orderBy('timestamp', 'desc'));
-      unsubscribeUpdates = onSnapshot(q, (snap) => {
-        setUpdates(snap.docs.map(d => ({ id: d.id, ...d.data() } as TrackingUpdate)));
-      }, (err) => handleFirestoreError(err, OperationType.GET, 'flights/updates'));
-    }
-
-    return () => {
-      unsubscribeShipment?.();
-      unsubscribeFlight?.();
-      unsubscribeUpdates?.();
+      }
     };
+
+    if (shipment || flight) {
+      refreshData();
+      interval = setInterval(refreshData, 10000);
+    }
+
+    return () => clearInterval(interval);
   }, [shipment?.id, flight?.id]);
 
   const handleTrack = async (e: React.FormEvent) => {
@@ -78,45 +73,23 @@ export default function Tracking({ profile }: TrackingProps) {
       const searchId = trackingNumber.trim().toUpperCase();
       
       if (trackingType === 'shipment') {
-        const docRef = doc(db, 'shipments', searchId);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          setShipment({ id: docSnap.id, ...docSnap.data() } as Shipment);
-          
-          // Fetch updates
-          const updatesRef = collection(db, 'shipments', docSnap.id, 'updates');
-          const q = query(updatesRef, orderBy('timestamp', 'desc'));
-          const updatesSnap = await getDocs(q);
-          setUpdates(updatesSnap.docs.map(d => ({ id: d.id, ...d.data() } as TrackingUpdate)));
-
-          // Fetch reviews
-          const reviewsRef = collection(db, 'reviews');
-          const reviewsQuery = query(
-            reviewsRef, 
-            where('targetId', '==', searchId),
-            orderBy('createdAt', 'desc')
-          );
-          const reviewsSnap = await getDocs(reviewsQuery);
-          setReviews(reviewsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Review)));
-        } else {
+        try {
+          const s = await api.shipments.get(searchId);
+          setShipment(s);
+          const u = await api.shipments.getUpdates(searchId);
+          setUpdates(u);
+          const r = await api.reviews.list();
+          setReviews(r.filter(review => review.targetId === searchId));
+        } catch (err) {
           setError('Shipment not found. Please check your tracking number.');
         }
       } else {
-        // Flight tracking
-        const flightsRef = collection(db, 'flights');
-        const q = query(flightsRef, where('flightNumber', '==', searchId));
-        const querySnap = await getDocs(q);
-
-        if (!querySnap.empty) {
-          const flightDoc = querySnap.docs[0];
-          setFlight({ id: flightDoc.id, ...flightDoc.data() } as Flight);
-          
-          // Initial updates fetch (onSnapshot will handle the rest)
-          const updatesRef = collection(db, 'flights', flightDoc.id, 'updates');
-          const uq = query(updatesRef, orderBy('timestamp', 'desc'));
-          const updatesSnap = await getDocs(uq);
-          setUpdates(updatesSnap.docs.map(d => ({ id: d.id, ...d.data() } as TrackingUpdate)));
+        const flights = await api.flights.list();
+        const f = flights.find(fl => fl.flightNumber === searchId);
+        if (f) {
+          setFlight(f);
+          const u = await api.flights.getUpdates(f.id);
+          setUpdates(u);
         } else {
           setError('Flight not found. Please check the flight number.');
         }
@@ -136,12 +109,13 @@ export default function Tracking({ profile }: TrackingProps) {
     setClaimStatus(null);
     
     try {
-      // Allow claiming if receiverEmail matches or if it's unassigned (senderId is empty/placeholder)
       if (shipment.receiverEmail === profile.email || !shipment.senderId || shipment.senderId === 'admin') {
-        await updateDoc(doc(db, 'shipments', shipment.id), {
-          senderId: profile.uid // Linking it to the user
+        await api.shipments.update(shipment.id, {
+          senderId: profile.uid
         });
         setClaimStatus({ type: 'success', message: 'Shipment successfully claimed!' });
+        const updated = await api.shipments.get(shipment.id);
+        setShipment(updated);
       } else {
         setClaimStatus({ type: 'error', message: 'You are not authorized to claim this shipment.' });
       }

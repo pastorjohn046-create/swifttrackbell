@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MessageSquare, X, Send, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { addDoc, collection, db } from '../firebase';
+import { api } from '../api';
 
 export default function SupportButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,10 +18,9 @@ export default function SupportButton() {
     e.preventDefault();
     setSending(true);
     try {
-      await addDoc(collection(db, 'tickets'), {
+      await api.supportTickets.create({
         ...formData,
-        status: 'open',
-        createdAt: new Date().toISOString()
+        status: 'open'
       });
       setSent(true);
       setFormData({ name: '', email: '', subject: '', message: '' });
