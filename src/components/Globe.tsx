@@ -19,20 +19,20 @@ export default function Globe() {
       theta: 0,
       dark: 0,
       diffuse: 1.2,
-      mapSamples: 16000,
+      mapSamples: 4000,
       mapBrightness: 6,
       baseColor: [1, 1, 1],
       markerColor: [255 / 255, 95 / 255, 31 / 255],
       glowColor: [1, 1, 1],
       markers: [
         // London
-        { location: [51.5074, -0.1278], size: 0.1 },
+        { location: [51.5074, -0.1278], size: 0.08 },
         // New York
-        { location: [40.7128, -74.006], size: 0.1 },
+        { location: [40.7128, -74.006], size: 0.08 },
         // Tokyo
-        { location: [35.6762, 139.6503], size: 0.1 },
+        { location: [35.6762, 139.6503], size: 0.08 },
         // Dubai
-        { location: [25.2048, 55.2708], size: 0.1 },
+        { location: [25.2048, 55.2708], size: 0.08 },
       ],
       onRender: (state: any) => {
         state.phi = phi;

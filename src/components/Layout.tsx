@@ -57,16 +57,20 @@ export default function Layout({ children, user, profile }: LayoutProps) {
           <Link to="/" className="flex items-center gap-4 group">
             <Logo size={32} className="text-primary group-hover:rotate-90 transition-transform duration-700" />
             <div className="flex flex-col">
-              <span className="font-black text-2xl tracking-tighter text-primary leading-none heading-display">SWIFTTRACK.</span>
+              <span className="font-black text-2xl tracking-tighter text-primary leading-none heading-display">GLOBAL NET.</span>
               <span className="text-[10px] font-mono text-muted uppercase tracking-[0.2em] ml-0.5 hidden sm:block">Logistics Excellence</span>
             </div>
           </Link>
 
           <nav className="flex items-center gap-12">
             <div className="hidden lg:flex items-center gap-8">
-              <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-100 rounded-full">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[9px] font-bold text-emerald-700 uppercase tracking-widest">System_Online</span>
+              <div className="flex items-center gap-4 px-4 py-1.5 bg-emerald-500/5 border border-emerald-500/20 rounded-full">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Global_Net: Online</span>
+                </div>
+                <div className="h-2 w-[1px] bg-emerald-500/20" />
+                <span className="text-[8px] font-mono font-bold text-emerald-600/60 uppercase">Ping: 12ms</span>
               </div>
               <Link to="/about" className="text-xs font-bold text-muted hover:text-primary transition-colors uppercase tracking-widest">About</Link>
               <Link to="/reviews" className="text-xs font-bold text-muted hover:text-primary transition-colors uppercase tracking-widest">Reviews</Link>
@@ -232,10 +236,10 @@ export default function Layout({ children, user, profile }: LayoutProps) {
             <div className="md:col-span-6 flex flex-col gap-8">
               <div className="flex items-center gap-4">
                 <Logo size={28} className="text-primary" />
-                <span className="font-black text-2xl tracking-tighter heading-display">SWIFTTRACK.</span>
+                <span className="font-black text-2xl tracking-tighter heading-display">GLOBAL NET.</span>
               </div>
               <p className="text-muted text-lg max-w-md font-medium leading-relaxed">
-                SwiftTrack is a global leader in high-value logistics, providing secure, transparent, and precise consignment systems for the modern world.
+                Global Net is a global leader in high-value logistics, providing secure, transparent, and precise consignment systems for the modern world.
               </p>
             </div>
             <div className="md:col-span-3 flex flex-col gap-8">
@@ -257,7 +261,7 @@ export default function Layout({ children, user, profile }: LayoutProps) {
           </div>
           <div className="flex flex-col md:flex-row justify-between items-center pt-12 border-t border-border gap-8">
             <p className="text-xs font-mono text-muted uppercase tracking-widest">
-              &copy; {new Date().getFullYear()} SwiftTrack Consignment Systems.
+              &copy; {new Date().getFullYear()} Global Net Consignment Systems.
             </p>
             <div className="flex gap-12">
               <span className="text-xs font-mono text-muted uppercase tracking-widest">ISO 9001:2015</span>

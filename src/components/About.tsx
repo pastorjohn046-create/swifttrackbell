@@ -29,7 +29,7 @@ export default function About() {
           className="flex flex-col gap-8 pb-4"
         >
           <p className="text-xl sm:text-2xl text-muted leading-relaxed font-medium max-w-xl">
-            SwiftTrack was founded with a single goal: to bring transparency and security to the global logistics industry. Today, we handle thousands of high-value consignments daily across 150+ countries.
+            Global Net was founded with a single goal: to bring transparency and security to the global logistics industry. Today, we handle thousands of high-value consignments daily across 150+ countries.
           </p>
           <div className="flex items-center gap-6 text-primary font-black text-sm tracking-widest uppercase group cursor-pointer">
             <span>Learn more about our mission</span>
@@ -65,7 +65,7 @@ export default function About() {
         <div className="flex flex-col gap-16">
           <div className="flex flex-col gap-8">
             <h2 className="text-5xl sm:text-7xl font-black tracking-tighter text-primary heading-display uppercase leading-[0.9]">
-              The <span className="text-accent">SwiftTrack</span> <br />
+              The <span className="text-accent">Global Net</span> <br />
               Advantage.
             </h2>
             <p className="text-lg text-muted leading-relaxed font-medium max-w-xl">
@@ -141,7 +141,7 @@ export default function About() {
           <div className="flex flex-col gap-6 max-w-2xl">
             <span className="text-micro text-accent tracking-[0.2em]">OUR CORE VALUES</span>
             <h2 className="text-5xl sm:text-7xl font-black tracking-tighter heading-display uppercase leading-none">
-              The SwiftTrack <br />
+              The Global Net <br />
               <span className="text-white/30 italic font-serif lowercase">Standard</span>.
             </h2>
           </div>

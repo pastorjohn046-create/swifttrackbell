@@ -129,7 +129,7 @@ export default function AdminLogin() {
         <div className="pt-6 border-t border-border text-center">
           <p className="text-[10px] font-bold text-muted uppercase tracking-widest leading-relaxed">
             Unauthorized access attempts are logged and monitored. <br/>
-            SwiftTrack Consignment Systems Security Protocol v4.2
+            Global Net Consignment Systems Security Protocol v4.2
           </p>
         </div>
       </motion.div>

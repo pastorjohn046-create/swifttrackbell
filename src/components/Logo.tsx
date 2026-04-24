@@ -43,12 +43,13 @@ export default function Logo({ className = "", size = 24 }: LogoProps) {
           animate={{ pathLength: 1, opacity: 1 }}
           transition={{ delay: 1, duration: 1, ease: "easeInOut" }}
         />
-        {/* Stylized "S" inside */}
+        {/* Stylized "G" inside */}
         <motion.path
-          d="M9 10C9 10 10 9 12 9C14 9 15 10 15 11C15 12 14 13 12 13C10 13 9 14 9 15C9 16 10 17 12 17C14 17 15 16 15 16"
+          d="M15 11C15 9.5 14 9 12 9C10 9 9 10.5 9 13C9 15.5 10 17 12 17C14 17 15 16 15 14.5H12"
           stroke="currentColor"
           strokeWidth="1.5"
           strokeLinecap="round"
+          strokeLinejoin="round"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.5, duration: 0.5 }}

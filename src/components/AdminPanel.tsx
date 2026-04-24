@@ -18,6 +18,7 @@ export default function AdminPanel() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [formError, setFormError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
@@ -123,7 +124,7 @@ export default function AdminPanel() {
   const resetShipmentForm = () => {
     setEditingShipment(null);
     setShipmentData({
-      trackingNumber: 'SWIFT-' + Math.floor(100000 + Math.random() * 900000),
+      trackingNumber: 'GNL-' + Math.floor(100000 + Math.random() * 900000),
       senderName: '',
       senderEmail: '',
       senderPhone: '',
@@ -144,6 +145,8 @@ export default function AdminPanel() {
     setShowShipmentForm(true);
   };
 
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+
   const refreshData = async () => {
     try {
       const [s, f, t, r, u] = await Promise.all([
@@ -159,6 +162,7 @@ export default function AdminPanel() {
       setReviews(r);
       setUsers(u);
       setLoading(false);
+      setLastRefreshed(new Date());
     } catch (err) {
       console.error(err);
     }
@@ -317,9 +321,27 @@ export default function AdminPanel() {
   return (
     <div className="flex flex-col gap-8 animate-fade-in">
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-4xl font-black tracking-tight text-text">Admin Portal</h2>
-          <p className="text-sm font-medium text-muted">Manage shipments, flights, and customer support</p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-4xl font-black tracking-tight text-text">Admin Portal</h2>
+            <p className="text-sm font-medium text-muted">Manage shipments, flights, and customer support</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] font-bold text-muted uppercase tracking-widest leading-none">Last_Sync</span>
+              <span className="text-xs font-mono font-bold text-primary">{format(lastRefreshed, 'HH:mm:ss')}</span>
+            </div>
+            <button 
+              onClick={() => {
+                setLoading(true);
+                refreshData();
+              }}
+              className="px-4 py-2 bg-white border border-border text-micro font-bold uppercase tracking-widest hover:border-primary transition-all flex items-center gap-2"
+            >
+              <Activity className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+              Sync_Now
+            </button>
+          </div>
         </div>
         <div className="flex gap-1 p-1 bg-bg rounded-xl w-full sm:w-fit overflow-x-auto scrollbar-hide">
           {(['overview', 'shipments', 'flights', 'cs', 'reviews', 'receipts', 'users'] as AdminTab[]).map(tab => (
@@ -1622,7 +1644,7 @@ export default function AdminPanel() {
                   <h2 className="text-xl sm:text-3xl font-black tracking-tight text-text">
                     {'title' in showReceipt ? showReceipt.title : 'Receipt'}
                   </h2>
-                  <p className="text-[10px] sm:text-xs font-bold text-muted uppercase tracking-widest">SwiftTrack Consignment Systems</p>
+                  <p className="text-[10px] sm:text-xs font-bold text-muted uppercase tracking-widest">Global Net Consignment Systems</p>
                 </div>
               </div>
               <div className="text-right w-full sm:w-auto">
@@ -1750,7 +1772,7 @@ export default function AdminPanel() {
               <div className="flex flex-col gap-2">
                 <div className="relative">
                   <span className="font-serif text-xl sm:text-3xl text-primary/40 absolute -top-6 sm:-top-8 left-2 pointer-events-none select-none italic">
-                    SwiftTrack Admin
+                    Global Net Admin
                   </span>
                   <div className="w-24 sm:w-40 h-px bg-border"></div>
                 </div>

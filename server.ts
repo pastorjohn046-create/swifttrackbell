@@ -20,16 +20,34 @@ const initialDb = {
   reviews: []
 };
 
+let dbCache: any = null;
+
 // Load or initialize DB
 function getDb() {
+  if (dbCache) return dbCache;
+  
   if (!fs.existsSync(DB_FILE)) {
     fs.writeFileSync(DB_FILE, JSON.stringify(initialDb, null, 2));
+    dbCache = JSON.parse(JSON.stringify(initialDb));
+  } else {
+    try {
+      dbCache = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+    } catch (e) {
+      console.error('Error loading DB, resetting to initial state');
+      dbCache = JSON.parse(JSON.stringify(initialDb));
+    }
   }
-  return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+  return dbCache;
 }
 
 function saveDb(db: any) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+  dbCache = db;
+  try {
+    // Use sync write to ensure data is strictly persisted before responding to API calls
+    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+  } catch (err) {
+    console.error('Error saving DB to file:', err);
+  }
 }
 
 async function startServer() {

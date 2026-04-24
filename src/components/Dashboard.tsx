@@ -16,6 +16,8 @@ export default function Dashboard({ profile }: DashboardProps) {
   const [claiming, setClaiming] = useState(false);
   const [claimStatus, setClaimStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+
   useEffect(() => {
     if (!profile) return;
 
@@ -25,6 +27,7 @@ export default function Dashboard({ profile }: DashboardProps) {
         // Filter shipments where user is sender OR receiver
         const filtered = data.filter(s => s.senderId === profile.uid || s.receiverEmail === profile.email);
         setShipments(filtered);
+        setLastRefreshed(new Date());
       } catch (error) {
         console.error('Error fetching shipments:', error);
       } finally {
@@ -104,27 +107,34 @@ export default function Dashboard({ profile }: DashboardProps) {
           <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-text">Dashboard</h2>
           <p className="text-xs sm:text-sm font-medium text-muted">Your account overview and shipment details</p>
         </div>
-        <button 
-          onClick={() => {
-            setLoading(true);
-            const fetchShipments = async () => {
-              try {
-                const data = await api.shipments.list();
-                const filtered = data.filter(s => s.senderId === profile?.uid || s.receiverEmail === profile?.email);
-                setShipments(filtered);
-              } catch (error) {
-                console.error('Error fetching shipments:', error);
-              } finally {
-                setLoading(false);
-              }
-            };
-            fetchShipments();
-          }}
-          className="btn-secondary !py-2 !px-4 !text-[10px] flex items-center gap-2"
-        >
-          <Activity className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-          REFRESH_DATA
-        </button>
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col items-end">
+            <span className="text-[10px] font-bold text-muted uppercase tracking-widest leading-none">Last_Sync</span>
+            <span className="text-xs font-mono font-bold text-primary">{format(lastRefreshed, 'HH:mm:ss')}</span>
+          </div>
+          <button 
+            onClick={() => {
+              setLoading(true);
+              const fetchShipments = async () => {
+                try {
+                  const data = await api.shipments.list();
+                  const filtered = data.filter(s => s.senderId === profile?.uid || s.receiverEmail === profile?.email);
+                  setShipments(filtered);
+                  setLastRefreshed(new Date());
+                } catch (error) {
+                  console.error('Error fetching shipments:', error);
+                } finally {
+                  setLoading(false);
+                }
+              };
+              fetchShipments();
+            }}
+            className="btn-secondary !py-2 !px-4 !text-[10px] flex items-center gap-2"
+          >
+            <Activity className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+            SYNC_DATA
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
