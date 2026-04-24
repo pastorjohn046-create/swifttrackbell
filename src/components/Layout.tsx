@@ -17,9 +17,15 @@ export default function Layout({ children, user, profile }: LayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
-    await api.auth.logout();
+    try {
+      await api.auth.logout();
+    } catch (e) {
+      console.error('Logout failed:', e);
+    }
     localStorage.removeItem('admin_session');
-    window.location.href = '/'; // Force reload to clear state
+    // Using href for a clean sweep of state as requested previously, 
+    // but making it more robust
+    window.location.replace('/');
   };
 
   return (

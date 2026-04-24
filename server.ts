@@ -204,7 +204,12 @@ async function startServer() {
   });
 
   app.post('/api/auth/logout', (req, res) => {
-    res.clearCookie('token');
+    res.cookie('token', '', { 
+      httpOnly: true, 
+      secure: true, 
+      sameSite: 'none', 
+      expires: new Date(0) 
+    });
     res.json({ success: true });
   });
 
