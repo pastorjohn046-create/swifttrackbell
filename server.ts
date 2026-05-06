@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
 import axios from 'axios';
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const DB_FILE = path.join(process.cwd(), 'db.json');
 const JWT_SECRET = process.env.JWT_SECRET || 'swifttrack-secret-2026';
 
@@ -343,7 +343,7 @@ async function startServer() {
     const searchId = req.params.id.toUpperCase();
     // Allow lookup by ID or Tracking Number
     const shipment = db.shipments.find((s: any) => 
-      s.id === req.params.id || 
+      s.id.toUpperCase() === searchId || 
       (s.trackingNumber && s.trackingNumber.toUpperCase() === searchId)
     );
     if (!shipment) return res.status(404).json({ error: 'Shipment not found' });
@@ -362,7 +362,7 @@ async function startServer() {
     const db = getDb();
     const searchId = req.params.id.toUpperCase();
     const index = db.shipments.findIndex((s: any) => 
-      s.id === req.params.id || 
+      s.id.toUpperCase() === searchId || 
       (s.trackingNumber && s.trackingNumber.toUpperCase() === searchId)
     );
     
@@ -460,7 +460,7 @@ async function startServer() {
     const searchId = req.params.id.toUpperCase();
     // Allow lookup by ID or Flight Number
     const flight = db.flights.find((f: any) => 
-      f.id === req.params.id || 
+      f.id.toUpperCase() === searchId || 
       (f.flightNumber && f.flightNumber.toUpperCase() === searchId)
     );
     if (!flight) return res.status(404).json({ error: 'Flight not found' });
@@ -501,7 +501,7 @@ async function startServer() {
     const db = getDb();
     const searchId = req.params.id.toUpperCase();
     const index = db.flights.findIndex((f: any) => 
-      f.id === req.params.id || 
+      f.id.toUpperCase() === searchId || 
       (f.flightNumber && f.flightNumber.toUpperCase() === searchId)
     );
     
