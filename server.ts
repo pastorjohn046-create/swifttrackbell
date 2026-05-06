@@ -42,12 +42,10 @@ function getDb() {
 
 function saveDb(db: any) {
   dbCache = db;
-  try {
-    // Use sync write to ensure data is strictly persisted before responding to API calls
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
-  } catch (err) {
-    console.error('Error saving DB to file:', err);
-  }
+  // Use async write in background to not block
+  fs.writeFile(DB_FILE, JSON.stringify(db, null, 2), (err) => {
+    if (err) console.error('Error saving DB to file:', err);
+  });
 }
 
 async function startServer() {
@@ -135,8 +133,8 @@ async function startServer() {
       db.users.push(newUser);
       saveDb(db);
 
-      const token = jwt.sign({ uid: newUser.uid }, JWT_SECRET, { expiresIn: '7d' });
-      res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'none' });
+      const token = jwt.sign({ uid: newUser.uid }, JWT_SECRET, { expiresIn: '30d' });
+      res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'none', maxAge: 30 * 24 * 60 * 60 * 1000 });
       
       const { password: _, ...userWithoutPassword } = newUser;
       console.log('Signup successful:', email);
@@ -174,8 +172,8 @@ async function startServer() {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
 
-      const token = jwt.sign({ uid: user.uid }, JWT_SECRET, { expiresIn: '7d' });
-      res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'none' });
+      const token = jwt.sign({ uid: user.uid }, JWT_SECRET, { expiresIn: '30d' });
+      res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'none', maxAge: 30 * 24 * 60 * 60 * 1000 });
       
       const { password: _, ...userWithoutPassword } = user;
       console.log('Login successful:', email);
@@ -204,12 +202,7 @@ async function startServer() {
   });
 
   app.post('/api/auth/logout', (req, res) => {
-    res.cookie('token', '', { 
-      httpOnly: true, 
-      secure: true, 
-      sameSite: 'none', 
-      expires: new Date(0) 
-    });
+    res.clearCookie('token', { httpOnly: true, secure: true, sameSite: 'none' });
     res.json({ success: true });
   });
 
@@ -283,8 +276,8 @@ async function startServer() {
         saveDb(db);
       }
 
-      const token = jwt.sign({ uid: user.uid }, JWT_SECRET, { expiresIn: '7d' });
-      res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'none' });
+      const token = jwt.sign({ uid: user.uid }, JWT_SECRET, { expiresIn: '30d' });
+      res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'none', maxAge: 30 * 24 * 60 * 60 * 1000 });
 
       res.send(`
         <html>
@@ -345,6 +338,18 @@ async function startServer() {
     res.json(db.shipments);
   });
 
+  app.get('/api/shipments/:id', (req, res) => {
+    const db = getDb();
+    const searchId = req.params.id.toUpperCase();
+    // Allow lookup by ID or Tracking Number
+    const shipment = db.shipments.find((s: any) => 
+      s.id === req.params.id || 
+      (s.trackingNumber && s.trackingNumber.toUpperCase() === searchId)
+    );
+    if (!shipment) return res.status(404).json({ error: 'Shipment not found' });
+    res.json(shipment);
+  });
+
   app.post('/api/shipments', isAdmin, (req, res) => {
     const db = getDb();
     const newShipment = { ...req.body, id: Math.random().toString(36).substring(2, 15), createdAt: new Date().toISOString() };
@@ -355,11 +360,21 @@ async function startServer() {
 
   app.put('/api/shipments/:id', isAdmin, (req, res) => {
     const db = getDb();
-    const index = db.shipments.findIndex((s: any) => s.id === req.params.id);
+    const searchId = req.params.id.toUpperCase();
+    const index = db.shipments.findIndex((s: any) => 
+      s.id === req.params.id || 
+      (s.trackingNumber && s.trackingNumber.toUpperCase() === searchId)
+    );
+    
+    const dataToSave = { ...req.body };
+    if (dataToSave.trackingNumber) {
+      dataToSave.trackingNumber = dataToSave.trackingNumber.toUpperCase();
+    }
+
     if (index === -1) {
-      db.shipments.push({ ...req.body, id: req.params.id });
+      db.shipments.push({ ...dataToSave, id: req.params.id });
     } else {
-      db.shipments[index] = { ...db.shipments[index], ...req.body };
+      db.shipments[index] = { ...db.shipments[index], ...dataToSave };
     }
     saveDb(db);
     res.json(db.shipments[index === -1 ? db.shipments.length - 1 : index]);
@@ -367,7 +382,11 @@ async function startServer() {
 
   app.post('/api/shipments/:id/claim', authenticate, (req, res) => {
     const db = getDb();
-    const index = db.shipments.findIndex((s: any) => s.id === req.params.id);
+    const searchId = req.params.id.toUpperCase();
+    const index = db.shipments.findIndex((s: any) => 
+      s.id === req.params.id || 
+      (s.trackingNumber && s.trackingNumber.toUpperCase() === searchId)
+    );
     if (index === -1) return res.status(404).json({ error: 'Shipment not found' });
     
     const user = db.users.find((u: any) => u.uid === (req as any).user.uid);
@@ -375,8 +394,13 @@ async function startServer() {
 
     const shipment = db.shipments[index];
     
-    // Allow claiming if receiverEmail matches or if it's unassigned/admin-owned
-    if (shipment.receiverEmail === user.email || !shipment.senderId || shipment.senderId === 'admin') {
+    // Allow claiming if receiverEmail OR senderEmail matches, or if it's unassigned
+    if (
+      shipment.receiverEmail === user.email || 
+      shipment.senderEmail === user.email ||
+      !shipment.senderId || 
+      shipment.senderId === 'admin'
+    ) {
       db.shipments[index].senderId = user.uid;
       saveDb(db);
       res.json(db.shipments[index]);
@@ -394,14 +418,22 @@ async function startServer() {
 
   app.get('/api/shipments/:id/updates', (req, res) => {
     const db = getDb();
-    const shipment = db.shipments.find((s: any) => s.id === req.params.id);
+    const searchId = req.params.id.toUpperCase();
+    const shipment = db.shipments.find((s: any) => 
+      s.id === req.params.id || 
+      (s.trackingNumber && s.trackingNumber.toUpperCase() === searchId)
+    );
     if (!shipment) return res.status(404).json({ error: 'Shipment not found' });
     res.json(shipment.updates || []);
   });
 
   app.post('/api/shipments/:id/updates', (req, res) => {
     const db = getDb();
-    const index = db.shipments.findIndex((s: any) => s.id === req.params.id);
+    const searchId = req.params.id.toUpperCase();
+    const index = db.shipments.findIndex((s: any) => 
+      s.id === req.params.id || 
+      (s.trackingNumber && s.trackingNumber.toUpperCase() === searchId)
+    );
     if (index === -1) return res.status(404).json({ error: 'Shipment not found' });
     
     if (!db.shipments[index].updates) db.shipments[index].updates = [];
@@ -423,6 +455,40 @@ async function startServer() {
     res.json(db.flights);
   });
 
+  app.get('/api/flights/:id', (req, res) => {
+    const db = getDb();
+    const searchId = req.params.id.toUpperCase();
+    // Allow lookup by ID or Flight Number
+    const flight = db.flights.find((f: any) => 
+      f.id === req.params.id || 
+      (f.flightNumber && f.flightNumber.toUpperCase() === searchId)
+    );
+    if (!flight) return res.status(404).json({ error: 'Flight not found' });
+    res.json(flight);
+  });
+
+  app.post('/api/flights/:id/claim', authenticate, (req, res) => {
+    const db = getDb();
+    const searchId = req.params.id.toUpperCase();
+    const index = db.flights.findIndex((f: any) => 
+      f.id === req.params.id || 
+      (f.flightNumber && f.flightNumber.toUpperCase() === searchId)
+    );
+    if (index === -1) return res.status(404).json({ error: 'Flight not found' });
+    
+    const user = db.users.find((u: any) => u.uid === (req as any).user.uid);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (!db.flights[index].userIds) db.flights[index].userIds = [];
+    
+    if (!db.flights[index].userIds.includes(user.uid)) {
+      db.flights[index].userIds.push(user.uid);
+      saveDb(db);
+    }
+    
+    res.json(db.flights[index]);
+  });
+
   app.post('/api/flights', isAdmin, (req, res) => {
     const db = getDb();
     const newFlight = { ...req.body, id: Math.random().toString(36).substring(2, 15) };
@@ -433,11 +499,21 @@ async function startServer() {
 
   app.put('/api/flights/:id', isAdmin, (req, res) => {
     const db = getDb();
-    const index = db.flights.findIndex((f: any) => f.id === req.params.id);
+    const searchId = req.params.id.toUpperCase();
+    const index = db.flights.findIndex((f: any) => 
+      f.id === req.params.id || 
+      (f.flightNumber && f.flightNumber.toUpperCase() === searchId)
+    );
+    
+    const dataToSave = { ...req.body };
+    if (dataToSave.flightNumber) {
+      dataToSave.flightNumber = dataToSave.flightNumber.toUpperCase();
+    }
+
     if (index === -1) {
-      db.flights.push({ ...req.body, id: req.params.id });
+      db.flights.push({ ...dataToSave, id: req.params.id });
     } else {
-      db.flights[index] = { ...db.flights[index], ...req.body };
+      db.flights[index] = { ...db.flights[index], ...dataToSave };
     }
     saveDb(db);
     res.json(db.flights[index === -1 ? db.flights.length - 1 : index]);
@@ -452,14 +528,22 @@ async function startServer() {
 
   app.get('/api/flights/:id/updates', (req, res) => {
     const db = getDb();
-    const flight = db.flights.find((f: any) => f.id === req.params.id);
+    const searchId = req.params.id.toUpperCase();
+    const flight = db.flights.find((f: any) => 
+      f.id === req.params.id || 
+      (f.flightNumber && f.flightNumber.toUpperCase() === searchId)
+    );
     if (!flight) return res.status(404).json({ error: 'Flight not found' });
     res.json(flight.updates || []);
   });
 
   app.post('/api/flights/:id/updates', isAdmin, (req, res) => {
     const db = getDb();
-    const index = db.flights.findIndex((f: any) => f.id === req.params.id);
+    const searchId = req.params.id.toUpperCase();
+    const index = db.flights.findIndex((f: any) => 
+      f.id === req.params.id || 
+      (f.flightNumber && f.flightNumber.toUpperCase() === searchId)
+    );
     if (index === -1) return res.status(404).json({ error: 'Flight not found' });
     
     if (!db.flights[index].updates) db.flights[index].updates = [];

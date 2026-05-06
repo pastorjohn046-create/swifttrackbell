@@ -124,7 +124,7 @@ export default function AdminPanel() {
   const resetShipmentForm = () => {
     setEditingShipment(null);
     setShipmentData({
-      trackingNumber: 'GNL-' + Math.floor(100000 + Math.random() * 900000),
+      trackingNumber: 'SWIFT-' + Math.floor(100000 + Math.random() * 900000),
       senderName: '',
       senderEmail: '',
       senderPhone: '',
@@ -179,6 +179,7 @@ export default function AdminPanel() {
     setUpdating(true);
     const dataToSave = {
       ...shipmentData,
+      trackingNumber: shipmentData.trackingNumber.toUpperCase().trim(),
       weight: parseFloat(shipmentData.weight) || 0
     };
     try {
@@ -225,11 +226,15 @@ export default function AdminPanel() {
   const handleSaveFlight = async (e: React.FormEvent) => {
     e.preventDefault();
     setUpdating(true);
+    const dataToSave = {
+      ...flightData,
+      flightNumber: flightData.flightNumber.toUpperCase().trim()
+    };
     try {
       if (editingFlight) {
-        await api.flights.update(editingFlight.id, flightData);
+        await api.flights.update(editingFlight.id, dataToSave);
       } else {
-        await api.flights.create(flightData);
+        await api.flights.create(dataToSave);
       }
       setShowFlightForm(false);
       setEditingFlight(null);
@@ -1644,7 +1649,7 @@ export default function AdminPanel() {
                   <h2 className="text-xl sm:text-3xl font-black tracking-tight text-text">
                     {'title' in showReceipt ? showReceipt.title : 'Receipt'}
                   </h2>
-                  <p className="text-[10px] sm:text-xs font-bold text-muted uppercase tracking-widest">Global Net Consignment Systems</p>
+                  <p className="text-[10px] sm:text-xs font-bold text-muted uppercase tracking-widest">SwiftTrack Consignment Systems</p>
                 </div>
               </div>
               <div className="text-right w-full sm:w-auto">
@@ -1772,7 +1777,7 @@ export default function AdminPanel() {
               <div className="flex flex-col gap-2">
                 <div className="relative">
                   <span className="font-serif text-xl sm:text-3xl text-primary/40 absolute -top-6 sm:-top-8 left-2 pointer-events-none select-none italic">
-                    Global Net Admin
+                    SwiftTrack Admin
                   </span>
                   <div className="w-24 sm:w-40 h-px bg-border"></div>
                 </div>

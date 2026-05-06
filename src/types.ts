@@ -57,6 +57,7 @@ export interface Flight {
   departureTime: string;
   arrivalTime: string;
   status: FlightStatus;
+  userIds?: string[];
 }
 
 export type TicketStatus = 'open' | 'pending' | 'resolved';

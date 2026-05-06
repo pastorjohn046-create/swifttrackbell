@@ -3,20 +3,20 @@ import { motion } from 'motion/react';
 import { Star, Package, Globe, ShieldCheck, Clock, Quote } from 'lucide-react';
 
 const reviews = [
-  { name: "Robert Chen", role: "Logistics Director", text: "Global Net has revolutionized how we manage our high-value electronics shipments. The real-time visibility is unmatched.", rating: 5 },
+  { name: "Robert Chen", role: "Logistics Director", text: "SwiftTrack has revolutionized how we manage our high-value electronics shipments. The real-time visibility is unmatched.", rating: 5 },
   { name: "Sarah Jenkins", role: "E-commerce Founder", text: "The most reliable logistics partner we've ever worked with. Their customer support is proactive and extremely helpful.", rating: 5 },
-  { name: "Marcus Thorne", role: "Global Operations", text: "Security was our main concern for luxury goods. Global Net's secure storage and tracking gave us complete peace of mind.", rating: 5 },
+  { name: "Marcus Thorne", role: "Global Operations", text: "Security was our main concern for luxury goods. SwiftTrack's secure storage and tracking gave us complete peace of mind.", rating: 5 },
   { name: "Elena Rodriguez", role: "Supply Chain Manager", text: "The dashboard is incredibly intuitive. I can manage hundreds of shipments across continents with just a few clicks.", rating: 5 },
-  { name: "David Kim", role: "Tech CEO", text: "Fast, secure, and professional. Global Net is our go-to for all international hardware deliveries.", rating: 5 },
-  { name: "Aisha Al-Fayed", role: "Import/Export Specialist", text: "Navigating customs used to be a nightmare. With Global Net, it's handled automatically. Truly a game-changer.", rating: 5 },
-  { name: "Thomas Müller", role: "Manufacturing Lead", text: "Precision is key in our industry. Global Net's time-sensitive delivery has never let us down.", rating: 5 },
+  { name: "David Kim", role: "Tech CEO", text: "Fast, secure, and professional. SwiftTrack is our go-to for all international hardware deliveries.", rating: 5 },
+  { name: "Aisha Al-Fayed", role: "Import/Export Specialist", text: "Navigating customs used to be a nightmare. With SwiftTrack, it's handled automatically. Truly a game-changer.", rating: 5 },
+  { name: "Thomas Müller", role: "Manufacturing Lead", text: "Precision is key in our industry. SwiftTrack's time-sensitive delivery has never let us down.", rating: 5 },
   { name: "Linda Wu", role: "Retail Chain Owner", text: "The cost-to-value ratio is excellent. We've seen a significant drop in lost consignments since switching.", rating: 5 },
-  { name: "James Wilson", role: "Art Gallery Curator", text: "Shipping priceless art requires extreme care. Global Net's specialized handling is the best in the business.", rating: 5 },
-  { name: "Sofia Conti", role: "Fashion Designer", text: "Getting our collections to global runways on time is critical. Global Net is our most trusted partner.", rating: 5 },
+  { name: "James Wilson", role: "Art Gallery Curator", text: "Shipping priceless art requires extreme care. SwiftTrack's specialized handling is the best in the business.", rating: 5 },
+  { name: "Sofia Conti", role: "Fashion Designer", text: "Getting our collections to global runways on time is critical. SwiftTrack is our most trusted partner.", rating: 5 },
   { name: "Kevin O'Brien", role: "Pharma Logistics", text: "Temperature-controlled and secure. They handle our sensitive medical supplies with the utmost professionalism.", rating: 5 },
   { name: "Yuki Tanaka", role: "Automotive Parts Dist.", text: "The tracking updates are so detailed, we always know exactly where our parts are in the supply chain.", rating: 5 },
   { name: "Isabella Silva", role: "Wine Exporter", text: "Fragile goods are safe in their hands. We've shipped thousands of cases with zero breakage.", rating: 5 },
-  { name: "Ahmed Hassan", role: "Tech Distributor", text: "Their global network is truly impressive. Even the most remote locations are reachable with Global Net.", rating: 5 },
+  { name: "Ahmed Hassan", role: "Tech Distributor", text: "Their global network is truly impressive. Even the most remote locations are reachable with SwiftTrack.", rating: 5 },
   { name: "Chloe Bennett", role: "Jewelry Designer", text: "The insurance and security protocols they have in place are top-notch. I wouldn't trust anyone else with my pieces.", rating: 5 }
 ];
 
@@ -46,7 +46,7 @@ export default function ReviewsPage() {
           className="flex flex-col gap-8 pb-4"
         >
           <p className="text-xl sm:text-2xl text-muted leading-relaxed font-medium max-w-xl">
-            Don't just take our word for it. Here's what our global partners and clients have to say about Global Net's logistics solutions.
+            Don't just take our word for it. Here's what our global partners and clients have to say about SwiftTrack's logistics solutions.
           </p>
         </motion.div>
       </section>
@@ -101,7 +101,7 @@ export default function ReviewsPage() {
               <span className="text-white/30 italic font-serif lowercase">satisfied</span> clients.
             </h2>
             <p className="text-xl text-white/60 max-w-xl font-medium leading-relaxed">
-              Experience the Global Net difference today. Secure, transparent, and global logistics for the modern world.
+              Experience the SwiftTrack difference today. Secure, transparent, and global logistics for the modern world.
             </p>
           </div>
           <div className="flex flex-wrap gap-6 relative z-10">

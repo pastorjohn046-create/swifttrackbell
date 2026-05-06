@@ -49,6 +49,12 @@ export default function App() {
     return localStorage.getItem('admin_session') === 'true' || profile?.role === 'admin';
   };
 
+  const handleLogout = async () => {
+    await api.auth.logout();
+    setUser(null);
+    setProfile(null);
+    localStorage.removeItem('admin_session');
+  };
 
   return (
     <Router>

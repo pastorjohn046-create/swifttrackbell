@@ -17,15 +17,9 @@ export default function Layout({ children, user, profile }: LayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
-    try {
-      await api.auth.logout();
-    } catch (e) {
-      console.error('Logout failed:', e);
-    }
+    await api.auth.logout();
     localStorage.removeItem('admin_session');
-    // Using href for a clean sweep of state as requested previously, 
-    // but making it more robust
-    window.location.replace('/');
+    window.location.href = '/'; // Force reload to clear state
   };
 
   return (
@@ -63,7 +57,7 @@ export default function Layout({ children, user, profile }: LayoutProps) {
           <Link to="/" className="flex items-center gap-4 group">
             <Logo size={32} className="text-primary group-hover:rotate-90 transition-transform duration-700" />
             <div className="flex flex-col">
-              <span className="font-black text-2xl tracking-tighter text-primary leading-none heading-display">GLOBAL NET.</span>
+              <span className="font-black text-2xl tracking-tighter text-primary leading-none heading-display">SWIFTTRACK.</span>
               <span className="text-[10px] font-mono text-muted uppercase tracking-[0.2em] ml-0.5 hidden sm:block">Logistics Excellence</span>
             </div>
           </Link>
@@ -242,10 +236,10 @@ export default function Layout({ children, user, profile }: LayoutProps) {
             <div className="md:col-span-6 flex flex-col gap-8">
               <div className="flex items-center gap-4">
                 <Logo size={28} className="text-primary" />
-                <span className="font-black text-2xl tracking-tighter heading-display">GLOBAL NET.</span>
+                <span className="font-black text-2xl tracking-tighter heading-display">SWIFTTRACK.</span>
               </div>
               <p className="text-muted text-lg max-w-md font-medium leading-relaxed">
-                Global Net is a global leader in high-value logistics, providing secure, transparent, and precise consignment systems for the modern world.
+                SwiftTrack is a global leader in high-value logistics, providing secure, transparent, and precise consignment systems for the modern world.
               </p>
             </div>
             <div className="md:col-span-3 flex flex-col gap-8">
@@ -267,7 +261,7 @@ export default function Layout({ children, user, profile }: LayoutProps) {
           </div>
           <div className="flex flex-col md:flex-row justify-between items-center pt-12 border-t border-border gap-8">
             <p className="text-xs font-mono text-muted uppercase tracking-widest">
-              &copy; {new Date().getFullYear()} Global Net Consignment Systems.
+              &copy; {new Date().getFullYear()} SwiftTrack Consignment Systems.
             </p>
             <div className="flex gap-12">
               <span className="text-xs font-mono text-muted uppercase tracking-widest">ISO 9001:2015</span>

@@ -9,7 +9,7 @@ export default function SplashScreen() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(false);
-    }, 800);
+    }, 600);
     return () => clearTimeout(timer);
   }, []);
 
@@ -52,8 +52,8 @@ export default function SplashScreen() {
               <Logo size={80} />
             </div>
             <div className="flex flex-col items-center">
-              <h1 className="text-4xl font-black tracking-tighter text-text">GLOBAL NET</h1>
-              <p className="text-sm font-bold text-muted uppercase tracking-[0.3em] ml-1">Logistics Excellence</p>
+              <h1 className="text-4xl font-black tracking-tighter text-text">SWIFTTRACK</h1>
+              <p className="text-sm font-bold text-muted uppercase tracking-[0.3em] ml-1">Consignment Systems</p>
             </div>
           </motion.div>
           

@@ -116,7 +116,7 @@ export default function Home({ user }: { user?: any }) {
             animate={{ opacity: 1, x: 0 }}
             className="section-label mb-12"
           >
-            Global Net Logistics Excellence
+            Global Logistics Excellence
           </motion.div>
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
@@ -132,7 +132,7 @@ export default function Home({ user }: { user?: any }) {
             transition={{ delay: 0.1 }}
             className="text-lg sm:text-xl text-muted max-w-lg leading-relaxed font-medium mb-12"
           >
-            Global Net provides professional-grade tracking and management for high-value consignments. Precision engineering for the modern supply chain.
+            SwiftTrack provides professional-grade tracking and management for high-value consignments. Precision engineering for the modern supply chain.
           </motion.p>
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -240,7 +240,7 @@ export default function Home({ user }: { user?: any }) {
               <span className="section-label">Our Heritage</span>
               <h2 className="text-6xl md:text-8xl font-black text-primary heading-display">EST. 2010.</h2>
               <p className="text-xl text-muted leading-relaxed font-medium">
-                Global Net has grown from a local courier service to a global logistics powerhouse. We specialize in high-value, time-sensitive consignments.
+                SwiftTrack has grown from a local courier service to a global logistics powerhouse. We specialize in high-value, time-sensitive consignments.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-12">
@@ -316,9 +316,9 @@ export default function Home({ user }: { user?: any }) {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 bg-border gap-[1px] border border-border">
           {[
-            { name: "Robert Chen", role: "Logistics Director", text: "Global Net has revolutionized how we manage our high-value electronics shipments. The real-time visibility is unmatched.", rating: 5 },
+            { name: "Robert Chen", role: "Logistics Director", text: "SwiftTrack has revolutionized how we manage our high-value electronics shipments. The real-time visibility is unmatched.", rating: 5 },
             { name: "Sarah Jenkins", role: "E-commerce Founder", text: "The most reliable logistics partner we've ever worked with. Their customer support is proactive and extremely helpful.", rating: 5 },
-            { name: "Marcus Thorne", role: "Global Operations", text: "Security was our main concern for luxury goods. Global Net's secure storage and tracking gave us complete peace of mind.", rating: 5 }
+            { name: "Marcus Thorne", role: "Global Operations", text: "Security was our main concern for luxury goods. SwiftTrack's secure storage and tracking gave us complete peace of mind.", rating: 5 }
           ].map((review, i) => (
             <div key={i} className="bg-white p-12 flex flex-col gap-12 hover:bg-bg transition-colors">
               <div className="flex gap-1">
@@ -349,7 +349,7 @@ export default function Home({ user }: { user?: any }) {
             READY TO <br /> SHIP?
           </h2>
           <p className="text-white/40 text-xl max-w-md font-medium">
-            Join thousands of global businesses who trust Global Net for their high-value logistics and supply chain management.
+            Join thousands of global businesses who trust SwiftTrack for their high-value logistics and supply chain management.
           </p>
           <Link to="/login" className="btn-primary !bg-white !text-primary hover:!bg-accent hover:!text-white self-start">
             CREATE ACCOUNT
@@ -357,7 +357,7 @@ export default function Home({ user }: { user?: any }) {
         </div>
         <div className="flex-1 relative min-h-[400px] flex items-center justify-center overflow-hidden">
           <div className="absolute inset-0 opacity-10 flex items-center justify-center">
-            <div className="text-[20vw] font-black heading-display italic select-none">GLOBAL</div>
+            <div className="text-[20vw] font-black heading-display italic select-none">SWIFT</div>
           </div>
           <motion.div
             animate={{ rotate: 360 }}

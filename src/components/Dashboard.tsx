@@ -10,6 +10,7 @@ interface DashboardProps {
 
 export default function Dashboard({ profile }: DashboardProps) {
   const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [flights, setFlights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [claimTracking, setClaimTracking] = useState('');
@@ -21,28 +22,41 @@ export default function Dashboard({ profile }: DashboardProps) {
   useEffect(() => {
     if (!profile) return;
 
-    const fetchShipments = async () => {
+    const fetchData = async () => {
       try {
-        const data = await api.shipments.list();
+        const [sData, fData] = await Promise.all([
+          api.shipments.list(),
+          api.flights.list()
+        ]);
+        
         // Filter shipments where user is sender OR receiver
-        const filtered = data.filter(s => s.senderId === profile.uid || s.receiverEmail === profile.email);
-        setShipments(filtered);
+        const filteredShipments = sData.filter(s => 
+          s.senderId === profile.uid || 
+          s.senderEmail === profile.email || 
+          s.receiverEmail === profile.email
+        );
+        
+        // Filter flights where user is in userIds
+        const filteredFlights = fData.filter(f => f.userIds && f.userIds.includes(profile.uid));
+        
+        setShipments(filteredShipments);
+        setFlights(filteredFlights);
         setLastRefreshed(new Date());
       } catch (error) {
-        console.error('Error fetching shipments:', error);
+        console.error('Error fetching dashboard data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchShipments();
+    fetchData();
     
-    // Poll for updates every 15 seconds since we don't have real-time sockets yet
-    const interval = setInterval(fetchShipments, 15000);
+    // Poll for updates every 15 seconds
+    const interval = setInterval(fetchData, 15000);
     return () => clearInterval(interval);
   }, [profile]);
 
-  const handleClaimShipment = async (e: React.FormEvent) => {
+  const handleClaim = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile || !claimTracking) return;
     
@@ -50,31 +64,60 @@ export default function Dashboard({ profile }: DashboardProps) {
     setClaimStatus(null);
     
     try {
-      const data = await api.shipments.list();
-      const shipment = data.find(s => s.trackingNumber === claimTracking);
-      
-      if (!shipment) {
-        setClaimStatus({ type: 'error', message: 'Tracking number not found.' });
+      // First try to claim as shipment
+      try {
+        const shipmentData = await api.shipments.list();
+        const searchVal = claimTracking.trim().toUpperCase();
+        const shipment = shipmentData.find(s => 
+          (s.trackingNumber && s.trackingNumber.toUpperCase() === searchVal) || 
+          (s.id && s.id.toUpperCase() === searchVal)
+        );
+        
+        if (shipment) {
+          await api.shipments.claim(shipment.id);
+          setClaimStatus({ type: 'success', message: 'Shipment successfully claimed!' });
+        } else {
+          // If not found as shipment, try as flight
+          const flightData = await api.flights.list();
+          const flight = flightData.find(f => 
+            (f.flightNumber && f.flightNumber.toUpperCase() === searchVal) || 
+            (f.id && f.id.toUpperCase() === searchVal)
+          );
+          
+          if (flight) {
+            await api.flights.claim(flight.id);
+            setClaimStatus({ type: 'success', message: 'Flight successfully claimed!' });
+          } else {
+            setClaimStatus({ type: 'error', message: 'Tracking or Flight number not found.' });
+            setClaiming(false);
+            return;
+          }
+        }
+      } catch (err: any) {
+        // If shipment claim failed, maybe it exists but auth failed or something. 
+        // But let's try flight anyway if it was a "not found" style error.
+        setClaimStatus({ type: 'error', message: err.message || 'Claim failed.' });
+        setClaiming(false);
         return;
       }
-
-      if (shipment.senderId === profile.uid) {
-        setClaimStatus({ type: 'error', message: 'This shipment is already in your dashboard.' });
-        return;
-      }
-
-      // Use the new claim endpoint
-      await api.shipments.claim(shipment.id);
       
-      setClaimStatus({ type: 'success', message: 'Shipment successfully claimed and added to your dashboard!' });
       setClaimTracking('');
       
-      // Refresh list
-      const updatedData = await api.shipments.list();
-      const filtered = updatedData.filter(s => s.senderId === profile.uid || s.receiverEmail === profile.email);
-      setShipments(filtered);
+      // Refresh data
+      const [sData, fData] = await Promise.all([
+        api.shipments.list(),
+        api.flights.list()
+      ]);
+      const filteredShipments = sData.filter(s => 
+        s.senderId === profile.uid || 
+        s.senderEmail === profile.email || 
+        s.receiverEmail === profile.email
+      );
+      const filteredFlights = fData.filter(f => f.userIds && f.userIds.includes(profile.uid));
+      setShipments(filteredShipments);
+      setFlights(filteredFlights);
     } catch (error: any) {
-      setClaimStatus({ type: 'error', message: error.message || 'An error occurred while claiming the shipment.' });
+      setClaimStatus({ type: 'error', message: error.message || 'An error occurred while claiming.' });
     } finally {
       setClaiming(false);
     }
@@ -115,19 +158,28 @@ export default function Dashboard({ profile }: DashboardProps) {
           <button 
             onClick={() => {
               setLoading(true);
-              const fetchShipments = async () => {
+              const fetchDataInternal = async () => {
                 try {
-                  const data = await api.shipments.list();
-                  const filtered = data.filter(s => s.senderId === profile?.uid || s.receiverEmail === profile?.email);
-                  setShipments(filtered);
+                  const [sData, fData] = await Promise.all([
+                    api.shipments.list(),
+                    api.flights.list()
+                  ]);
+                  const filteredShipments = sData.filter(s => 
+                    s.senderId === profile?.uid || 
+                    s.senderEmail === profile?.email || 
+                    s.receiverEmail === profile?.email
+                  );
+                  const filteredFlights = fData.filter(f => f.userIds && f.userIds.includes(profile?.uid));
+                  setShipments(filteredShipments);
+                  setFlights(filteredFlights);
                   setLastRefreshed(new Date());
                 } catch (error) {
-                  console.error('Error fetching shipments:', error);
+                  console.error('Error fetching dashboard data:', error);
                 } finally {
                   setLoading(false);
                 }
               };
-              fetchShipments();
+              fetchDataInternal();
             }}
             className="btn-secondary !py-2 !px-4 !text-[10px] flex items-center gap-2"
           >
@@ -181,20 +233,20 @@ export default function Dashboard({ profile }: DashboardProps) {
             </div>
           </div>
 
-          {/* Claim Shipment */}
+          {/* Claim Shipment/Flight */}
           <div className="card-modern p-5 sm:p-8 bg-white border-primary/10">
             <h3 className="text-lg sm:text-xl font-bold tracking-tight mb-6 flex items-center gap-2">
               <Plus className="w-5 h-5 text-primary" />
-              Claim Shipment
+              Claim Shipment/Flight
             </h3>
-            <form onSubmit={handleClaimShipment} className="flex flex-col gap-4">
+            <form onSubmit={handleClaim} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Tracking Number</span>
+                <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Tracking / Flight Number</span>
                 <input 
                   type="text" 
                   value={claimTracking}
                   onChange={(e) => setClaimTracking(e.target.value)}
-                  placeholder="Enter tracking number..."
+                  placeholder="Enter number..."
                   className="input-modern py-2 text-sm"
                   required
                 />
@@ -204,7 +256,7 @@ export default function Dashboard({ profile }: DashboardProps) {
                 disabled={claiming}
                 className="btn-primary py-2.5 text-xs w-full"
               >
-                {claiming ? 'Claiming...' : 'Claim Shipment'}
+                {claiming ? 'Claiming...' : 'Claim Item'}
               </button>
               {claimStatus && (
                 <div className={`p-3 rounded-lg flex items-center gap-2 text-xs font-bold ${
@@ -281,62 +333,71 @@ export default function Dashboard({ profile }: DashboardProps) {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-border/50">
+                    <div className="mt-4 pt-4 border-t border-border/50 flex justify-between items-center">
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Receiver</span>
                         <span className="text-sm font-bold">{shipment.receiverName}</span>
                       </div>
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-col gap-1 items-end">
                         <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Destination</span>
-                        <span className="text-sm font-bold">{shipment.destination || shipment.receiverAddress}</span>
+                        <span className="text-sm font-bold text-right">{shipment.destination || shipment.receiverAddress}</span>
                       </div>
                     </div>
+                    
+                    <a 
+                      href={`/tracking?id=${shipment.trackingNumber}`}
+                      className="mt-4 pt-4 border-t border-border/50 flex items-center justify-center gap-2 text-[10px] font-black text-primary hover:text-accent transition-colors uppercase tracking-widest"
+                    >
+                      View Full Details <Activity className="w-3 h-3" />
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-                    {/* Tracking Updates Timeline */}
-                    {((shipment as any).updates && (shipment as any).updates.length > 0) && (
-                      <div className="mt-6 pt-6 border-t border-border/50">
-                        <h4 className="text-[10px] font-bold text-muted uppercase tracking-widest mb-4">Tracking History</h4>
-                        <div className="flex flex-col gap-4">
-                          {(shipment as any).updates.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((update: any) => (
-                            <div key={update.id} className="flex gap-4">
-                              <div className="flex flex-col items-center">
-                                <div className="w-2 h-2 rounded-full bg-primary mt-1.5" />
-                                <div className="w-px h-full bg-border mt-1" />
-                              </div>
-                              <div className="flex flex-col gap-1 pb-4">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-bold text-text">{update.status}</span>
-                                  <span className="text-[10px] font-medium text-muted">{format(new Date(update.timestamp), 'MMM dd, HH:mm')}</span>
-                                </div>
-                                <span className="text-[10px] font-bold text-primary uppercase tracking-tight flex items-center gap-1">
-                                  <MapPin className="w-3 h-3" /> {update.location}
-                                </span>
-                                <p className="text-xs text-muted leading-relaxed">{update.description}</p>
-                                {update.packageImage && (
-                                  <img 
-                                    src={update.packageImage} 
-                                    alt="Update" 
-                                    referrerPolicy="no-referrer"
-                                    className="mt-2 w-full h-24 object-cover rounded-lg border border-border" 
-                                  />
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+          {/* Tracked Flights Section */}
+          <div className="card-modern p-5 sm:p-8 bg-white border-primary/10">
+            <h3 className="text-lg sm:text-xl font-bold tracking-tight mb-6 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-primary" />
+              Tracked Flights
+            </h3>
+            {flights.length === 0 ? (
+              <div className="py-8 text-center border-2 border-dashed border-border rounded-2xl flex flex-col items-center gap-3">
+                <Shield className="w-8 h-8 text-muted/20" />
+                <p className="text-xs font-bold text-muted uppercase tracking-widest">No flights tracked</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {flights.map((flight) => (
+                  <div key={flight.id} className="p-4 border border-border rounded-xl bg-primary/5 hover:border-primary/30 transition-all flex flex-col gap-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-black font-mono text-primary">{flight.flightNumber}</span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        flight.status === 'arrived' ? 'bg-emerald-100 text-emerald-700' : 
+                        flight.status === 'delayed' ? 'bg-amber-100 text-amber-700' : 'bg-primary/10 text-primary'
+                      }`}>
+                        {flight.status}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-end">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Origin</span>
+                        <span className="text-sm font-bold">{flight.origin}</span>
                       </div>
-                    )}
-
-                    {shipment.packageImage && (
-                      <div className="mt-4 pt-4 border-t border-border/50">
-                        <img 
-                          src={shipment.packageImage} 
-                          alt="Package" 
-                          referrerPolicy="no-referrer"
-                          className="w-full h-32 object-cover rounded-lg border border-border" 
-                        />
+                      <div className="h-px flex-1 bg-border/50 mx-2 mb-2"></div>
+                      <div className="flex flex-col items-end">
+                        <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Dest</span>
+                        <span className="text-sm font-bold">{flight.destination}</span>
                       </div>
-                    )}
+                    </div>
+                    
+                    <a 
+                      href={`/tracking?id=${flight.flightNumber}&type=flight`}
+                      className="mt-2 pt-4 border-t border-border/50 flex items-center justify-center gap-2 text-[10px] font-black text-primary hover:text-accent transition-colors uppercase tracking-widest"
+                    >
+                      Track Live <Plus className="w-3 h-3" />
+                    </a>
                   </div>
                 ))}
               </div>

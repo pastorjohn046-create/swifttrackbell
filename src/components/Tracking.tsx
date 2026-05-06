@@ -41,21 +41,22 @@ export default function Tracking({ profile }: TrackingProps) {
         try {
           const s = await api.shipments.get(searchId);
           setShipment(s);
-          const u = await api.shipments.getUpdates(searchId);
+          const [u, r] = await Promise.all([
+            api.shipments.getUpdates(s.id),
+            api.reviews.list()
+          ]);
           setUpdates(u);
-          const r = await api.reviews.list();
-          setReviews(r.filter(review => review.targetId === searchId));
+          setReviews(r.filter(review => review.targetId === s.id || review.targetId === s.trackingNumber));
         } catch (err) {
           setError('Shipment not found. Please check your tracking number.');
         }
       } else {
-        const flights = await api.flights.list();
-        const f = flights.find(fl => fl.flightNumber === searchId);
-        if (f) {
+        try {
+          const f = await api.flights.get(searchId);
           setFlight(f);
           const u = await api.flights.getUpdates(f.id);
           setUpdates(u);
-        } else {
+        } catch (err) {
           setError('Flight not found. Please check the flight number.');
         }
       }
@@ -70,9 +71,11 @@ export default function Tracking({ profile }: TrackingProps) {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const id = params.get('id');
+    const type = params.get('type') as TrackingType;
     if (id) {
       setTrackingNumber(id);
-      performTracking(id, 'shipment');
+      if (type === 'flight') setTrackingType('flight');
+      performTracking(id, type || 'shipment');
     }
   }, [location.search, performTracking]);
 
@@ -82,9 +85,11 @@ export default function Tracking({ profile }: TrackingProps) {
     const refreshData = async () => {
       if (shipment) {
         try {
-          const s = await api.shipments.get(shipment.id);
+          const [s, u] = await Promise.all([
+            api.shipments.get(shipment.id),
+            api.shipments.getUpdates(shipment.id)
+          ]);
           setShipment(s);
-          const u = await api.shipments.getUpdates(shipment.id);
           setUpdates(u);
         } catch (err) {
           console.error(err);
@@ -93,9 +98,11 @@ export default function Tracking({ profile }: TrackingProps) {
 
       if (flight) {
         try {
-          const f = await api.flights.get(flight.id);
+          const [f, u] = await Promise.all([
+            api.flights.get(flight.id),
+            api.flights.getUpdates(flight.id)
+          ]);
           setFlight(f);
-          const u = await api.flights.getUpdates(flight.id);
           setUpdates(u);
         } catch (err) {
           console.error(err);
@@ -132,6 +139,24 @@ export default function Tracking({ profile }: TrackingProps) {
       setShipment(updated);
     } catch (error: any) {
       setClaimStatus({ type: 'error', message: error.message || 'An error occurred while claiming the shipment.' });
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  const handleClaimFlight = async () => {
+    if (!profile || !flight) return;
+    
+    setClaiming(true);
+    setClaimStatus(null);
+    
+    try {
+      await api.flights.claim(flight.id);
+      setClaimStatus({ type: 'success', message: 'Flight successfully added to your tracking list!' });
+      const updated = await api.flights.get(flight.id);
+      setFlight(updated);
+    } catch (error: any) {
+      setClaimStatus({ type: 'error', message: error.message || 'An error occurred while claiming the flight.' });
     } finally {
       setClaiming(false);
     }
@@ -474,6 +499,25 @@ export default function Tracking({ profile }: TrackingProps) {
                   }, null, 2)}
                 </pre>
               </motion.div>
+            )}
+
+            {profile && (!flight.userIds || !flight.userIds.includes(profile.uid)) && (
+              <button 
+                onClick={handleClaimFlight}
+                disabled={claiming}
+                className="bg-accent text-white px-8 py-4 text-xs font-black tracking-widest uppercase hover:bg-accent/90 transition-colors w-fit flex items-center gap-3"
+              >
+                {claiming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                TRACK FLIGHT
+              </button>
+            )}
+
+            {claimStatus && (
+              <div className={`p-4 text-micro font-bold border ${
+                claimStatus.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'
+              }`}>
+                {claimStatus.message}
+              </div>
             )}
           </div>
 
